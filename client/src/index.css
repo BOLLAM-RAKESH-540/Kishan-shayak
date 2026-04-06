@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- ADD THIS SECTION AT THE BOTTOM --- */
+body {
+  /* 1. The Image URL (A nice green farm field) */
+  background-image: url('https://images.unsplash.com/photo-1605000797499-95a51c5269ae?q=80&w=2071&auto=format&fit=crop');
+  
+  /* 2. Ensure it covers the whole screen */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  /* 3. Keep the image still when scrolling (looks professional) */
+  background-attachment: fixed;
+}

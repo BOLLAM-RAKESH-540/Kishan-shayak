@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  # Dedicated Database for Kisan Sahayak
+  kisan-db:
+    image: postgres:15
+    container_name: kisan-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: kisan_password
+      POSTGRES_DB: kisan_db
+    ports:
+      - "5435:5432" # We use 5435 to avoid conflict with your other project
+    volumes:
+      - kisan_data:/var/lib/postgresql/data
+
+volumes:
+  kisan_data:

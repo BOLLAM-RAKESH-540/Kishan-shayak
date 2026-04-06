@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ListingType {
+  LIVESTOCK
+  MILK
+}
+
+model User {
+  id           String    @id @default(uuid())
+  phoneNumber  String    @unique
+  passwordHash String?
+  name         String?
+  location     String?
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  vehicleWorks      VehicleWork[]
+  farms             FarmProfile[]
+  expenses          Expense[]
+  supplierShops     SupplierShop[]
+  rentals           VehicleRental[]
+  husbandryListings HusbandryListing[]
+
+  @@index([phoneNumber])
+}
+
+model HusbandryListing {
+  id             String      @id @default(uuid())
+  userId         String      
+  user           User        @relation(fields: [userId], references: [phoneNumber])
+  type           ListingType
+  price          Float
+  address        String
+  latitude       Float
+  longitude      Float
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  species        String?
+  breed          String?
+  ageMonths      Int?
+  imageUrl       String?
+  milkType       String?
+  quantityLiters Float?
+  expiresAt      DateTime?
+
+  @@index([userId])
+}
+
+model FarmProfile {
+  id             String    @id @default(uuid())
+  userId         String    
+  user           User      @relation(fields: [userId], references: [phoneNumber])
+  cropName       String
+  fieldSizeAcres Float
+  startDate      DateTime
+  endDate        DateTime? 
+
+  status          String    @default("ACTIVE") // ACTIVE, HARVESTED
+  
+  expenses        Expense[]
+  activities      FieldActivity[]
+  yields          YieldLog[]
+
+  @@index([userId, status])
+}
+
+model FieldActivity {
+  id          String      @id @default(uuid())
+  farmId      String
+  farm        FarmProfile @relation(fields: [farmId], references: [id])
+  type        String
+  productName String
+  quantity    Float
+  unit        String
+  appliedDate DateTime
+}
+
+model Expense {
+  id        String       @id @default(uuid())
+  userId    String       
+  user      User         @relation(fields: [userId], references: [phoneNumber])
+  
+  farmId    String?
+  farm      FarmProfile? @relation(fields: [farmId], references: [id])
+
+  category  String
+  itemName  String
+  amount    Float
+  date      DateTime     @default(now())
+  note      String?
+
+  @@index([userId])
+  @@index([farmId])
+}
+
+model YieldLog {
+  id           String      @id @default(uuid())
+  farmId       String
+  farm         FarmProfile @relation(fields: [farmId], references: [id])
+  quantity     Float
+  unit         String
+  sellingPrice Float
+  soldDate     DateTime
+}
+
+model SupplierShop {
+  id            String    @id @default(uuid())
+  name          String
+  type          String
+  address       String
+  contactNumber String?
+  ownerId       String    
+  user          User      @relation(fields: [ownerId], references: [phoneNumber])
+  products      Product[]
+  createdAt     DateTime  @default(now())
+
+  @@index([ownerId])
+}
+
+model Product {
+  id             String       @id @default(uuid())
+  name           String
+  price          Float
+  unit           String
+  supplierShopId String
+  shop           SupplierShop @relation(fields: [supplierShopId], references: [id])
+}
+
+model Scheme {
+  id          String  @id @default(uuid())
+  title       String
+  description String
+  link        String?
+}
+
+model Expert {
+  id            String  @id @default(uuid())
+  name          String
+  designation   String
+  contactNumber String
+  videoUrl      String?
+}
+
+model VehicleWork {
+  id            String   @id @default(uuid())
+  userId        String   
+  user          User     @relation(fields: [userId], references: [phoneNumber])
+  customerName  String
+  customerPhone String
+  vehicleName   String
+  workDate      DateTime
+  amount        Float
+  isPaid        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model VehicleRental {
+  id           String   @id @default(uuid())
+  userId       String   
+  user         User     @relation(fields: [userId], references: [phoneNumber])
+  vehicleName  String
+  type         String
+  location     String
+  pricePerHour Float
+  contactPhone String
+  isAvailable  Boolean  @default(true)
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model ReferenceCrop {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  image     String?
+  diseases  Disease[]
+
+  @@index([name])
+}
+
+model Disease {
+  id        Int           @id @default(autoincrement())
+  name      String
+  symptoms  String        @db.Text
+  imageUrl  String
+  cropId    Int
+  crop      ReferenceCrop @relation(fields: [cropId], references: [id])
+  treatments Treatment[]
+
+  @@index([cropId])
+}
+
+model Treatment {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String
+  dosage       String
+  instructions String?  @db.Text
+  diseaseId    Int
+  disease      Disease  @relation(fields: [diseaseId], references: [id])
+
+  @@index([diseaseId])
+}
