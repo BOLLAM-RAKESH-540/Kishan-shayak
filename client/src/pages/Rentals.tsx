@@ -7,18 +7,16 @@ import {
   X, 
   Tractor, 
   Truck, 
-  Wrench, 
-  Droplets, 
+  Droplets,
   Construction,
   Trash2,
   CheckCircle,
   Zap,
   Tag,
   ShieldCheck,
-  TrendingUp,
-  LayoutGrid
+  TrendingUp
 } from 'lucide-react';
-import axios from 'axios';
+import { apiService } from '../services/api';
 
 const Rentals = () => {
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -74,7 +72,7 @@ const Rentals = () => {
 
   const fetchRentals = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/api/rentals/all');
+      const res = await apiService.rentals.getAll();
       setVehicles(res.data);
     } catch (error) {
       console.error("Error fetching rentals", error);
@@ -88,10 +86,7 @@ const Rentals = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/rentals/add', formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiService.rentals.create(formData);
       alert("Machinery Listed Successfully in Bazaar! 🚜");
       setShowForm(false);
       setFormData({ vehicleName: '', type: 'Tractor', pricePerHour: '', location: '', contactPhone: '' });
@@ -104,10 +99,7 @@ const Rentals = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm("Remove this machinery listing from Bazaar?")) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3000/api/rentals/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiService.rentals.delete(id.toString());
       setVehicles(vehicles.filter(v => v.id !== id));
     } catch (error) {
       alert("Failed to delete.");

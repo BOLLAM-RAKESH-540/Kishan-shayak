@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3000/api'; 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'; 
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -28,6 +28,7 @@ export const apiService = {
     register: (data: any) => api.post('/auth/register', data),
     forgotPasswordOtp: (phoneNumber: string) => api.post('/auth/forgot-password-otp', { phoneNumber }),
     resetPassword: (data: any) => api.post('/auth/reset-password', data),
+    getProfile: () => api.get('/auth/profile'),
   },
 
   farms: {
@@ -39,6 +40,8 @@ export const apiService = {
     // Field Activity endpoints
     addActivity: (data: any) => api.post('/farms/activity/add', data),
     getActivities: (farmId: string) => api.get(`/farms/activities/${farmId}`),
+    harvest: (farmId: string, data: any) => api.patch(`/farms/harvest/${farmId}`, data),
+    delete: (farmId: string) => api.delete(`/farms/${farmId}`),
   },
 
   expenses: {
@@ -49,11 +52,15 @@ export const apiService = {
   market: {
     getPrices: () => api.get('/market/prices'),
   },
+  
+  diseases: {
+    getByCrop: (crop: string) => api.get(`/diseases/crop/${crop}`),
+  },
 
   shops: {
-    getAll: () => api.get('/shops'),
-    create: (data: any) => api.post('/shops/add', { ...data, ownerId: getPhone() }),
-    addProduct: (shopId: string, data: any) => api.post(`/shops/${shopId}/products`, data),
+    getAll: () => api.get('/shops/list'),
+    create: (data: any) => api.post('/shops/create', data),
+    addProduct: (data: any) => api.post('/shops/add-product', data),
   },
 
   rentals: {
@@ -63,16 +70,16 @@ export const apiService = {
   },
 
   vehicles: {
-    getAll: () => api.get(`/vehicles/${getPhone()}`),
-    create: (data: any) => api.post('/vehicles/add', { ...data, userId: getPhone() }),
+    getAll: (searchTerm = '') => api.get('/vehicles/list', { params: { search: searchTerm } }),
+    create: (data: any) => api.post('/vehicles/add', data),
     markPaid: (id: string) => api.patch(`/vehicles/pay/${id}`),
   },
 
   husbandry: {
     getAll: () => api.get(`/husbandry/my-listings/${getPhone()}`),
     create: (data: any) => api.post('/husbandry/create', { ...data, userId: getPhone() }),
-    toggle: (id: string) => api.patch(`/husbandry/toggle-status/${id}`),
-    delete: (id: string) => api.delete(`/husbandry/delete/${id}`),
+    toggle: (id: string) => api.patch(`/husbandry/toggle-status/${id}?userId=${getPhone()}`),
+    delete: (id: string) => api.delete(`/husbandry/delete/${id}?userId=${getPhone()}`),
   },
 };
 

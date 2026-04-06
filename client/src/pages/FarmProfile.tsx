@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { apiService } from '../services/api';
 import { CROPS, getCrop } from '../utils/cropConstants';
 // Lucide icons removed
 
@@ -22,14 +22,13 @@ const FarmProfile = () => {
     } catch { return ''; }
   })();
 
-  const API = 'http://localhost:3000/api/farms';
 
   const refresh = async () => {
     if (!userPhone) return;
     try {
       const [farmRes, sumRes] = await Promise.all([
-        axios.get(`${API}/${userPhone}`),
-        axios.get(`${API}/summary/${userPhone}`),
+        apiService.farms.getAll(),
+        apiService.farms.getSummary(),
       ]);
       setFarms(Array.isArray(farmRes.data) ? farmRes.data : farmRes.data.data || []);
       setSummary(sumRes.data);
@@ -58,8 +57,7 @@ const FarmProfile = () => {
       return alert('Please fill in all required fields.');
     setSaving(true);
     try {
-      await axios.post(`${API}/add`, {
-        userId: userPhone,
+      await apiService.farms.add({
         cropName: selectedCrop.value,
         fieldSizeAcres: parseFloat(formData.fieldSizeAcres),
         startDate: new Date(formData.startDate).toISOString(),
@@ -76,14 +74,14 @@ const FarmProfile = () => {
     const price = window.prompt('Enter total amount earned from this harvest (₹):');
     if (price === null) return;
     try {
-      await axios.patch(`${API}/harvest/${farmId}`, { sellingPrice: parseFloat(price), quantity: 0, unit: 'kg' });
+      await apiService.farms.harvest(farmId, { sellingPrice: parseFloat(price), quantity: 0, unit: 'kg' });
       refresh();
     } catch { alert('Error updating harvest status'); }
   };
 
   const handleDelete = async (farmId: string) => {
     if (!window.confirm('Delete this crop? All related expenses will also be removed.')) return;
-    try { await axios.delete(`${API}/${farmId}`); refresh(); }
+    try { await apiService.farms.delete(farmId); refresh(); }
     catch { alert('Error deleting record'); }
   };
 

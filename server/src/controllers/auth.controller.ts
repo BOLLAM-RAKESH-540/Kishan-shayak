@@ -82,9 +82,14 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // 🟢 JWT Payload includes both ID and Phone
+    if (!process.env.JWT_SECRET) {
+      console.error("❌ JWT_SECRET is not defined in environment variables!");
+      return res.status(500).json({ message: "Internal Server Error: Secret key missing" });
+    }
+
     const token = jwt.sign(
       { userId: user.id, phoneNumber: user.phoneNumber }, 
-      process.env.JWT_SECRET || "secret", 
+      process.env.JWT_SECRET, 
       { expiresIn: "24h" }
     );
 

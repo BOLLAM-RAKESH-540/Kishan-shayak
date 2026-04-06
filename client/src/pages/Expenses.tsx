@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api'; 
-import axios from 'axios'; 
 import { getCrop } from '../utils/cropConstants';
 
 const Expenses = () => {
@@ -50,7 +49,7 @@ const Expenses = () => {
       const expRes = await apiService.expenses.getAll();
       setExpenses(expRes.data || []);
 
-      const farmRes = await axios.get(`http://localhost:3000/api/farms/${userPhone}`);
+      const farmRes = await apiService.farms.getAll();
       const actualFarms = farmRes.data.data || farmRes.data;
       
       if (Array.isArray(actualFarms)) {

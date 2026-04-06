@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sprout, Phone, Lock, User, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiService } from '../../services/api';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ const Register = () => {
     e.preventDefault();
     try {
       // Connect to Backend API
-      await axios.post('http://localhost:3000/api/auth/register', formData);
+      await apiService.auth.register(formData);
       alert('Registration Successful! Please Login.');
       navigate('/login'); // Redirect to login page
     } catch (error) {

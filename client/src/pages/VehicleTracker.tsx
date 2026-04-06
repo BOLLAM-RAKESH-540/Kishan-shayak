@@ -13,7 +13,7 @@ import {
   Clock,
   LayoutGrid
 } from 'lucide-react';
-import axios from 'axios';
+import { apiService } from '../services/api';
 
 // Define what a Work Log looks like
 interface WorkLog {
@@ -53,14 +53,7 @@ const VehicleTracker = () => {
   // Fetch Logs
   const fetchLogs = async (searchTerm = '') => {
     try {
-      const token = localStorage.getItem('token');
-      const url = searchTerm 
-        ? `http://localhost:3000/api/vehicles/list?search=${searchTerm}`
-        : `http://localhost:3000/api/vehicles/list`;
-        
-      const res = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiService.vehicles.getAll(searchTerm);
       setLogs(res.data);
     } catch (error) {
       console.error("Error fetching logs", error);
@@ -77,10 +70,7 @@ const VehicleTracker = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/vehicles/add', formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiService.vehicles.create(formData);
       alert("Khata Entry Added! 📖");
       setShowForm(false);
       setFormData({ 

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Thermometer, Droplets, ShieldAlert, Search } from 'lucide-react';
+import { apiService } from '../services/api'; 
 
 interface Treatment {
   id: number;
@@ -73,8 +74,8 @@ const Diseases = () => {
   const fetchDiseases = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/diseases/crop/${selectedCrop}`);
-      const data = await response.json();
+      const res = await apiService.diseases.getByCrop(selectedCrop);
+      const data = res.data;
       if (data && data.diseases && data.diseases.length > 0) {
         setDiseases(data.diseases);
       } else {

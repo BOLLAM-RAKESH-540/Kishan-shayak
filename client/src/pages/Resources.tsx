@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Store, MapPin, Phone, Plus, Package, Building2, Search, ShieldCheck, FileText } from 'lucide-react';
-import axios from 'axios';
+import { apiService } from '../services/api';
 
 const Resources = () => {
   const [shops, setShops] = useState<any[]>([]);
@@ -29,10 +29,7 @@ const Resources = () => {
 
   const fetchShops = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:3000/api/shops/list', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiService.shops.getAll();
       setShops(res.data);
     } catch (err) {
       console.error("Error fetching shops");
@@ -42,10 +39,7 @@ const Resources = () => {
   const handleRegisterShop = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/shops/create', shopForm, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiService.shops.create(shopForm);
       alert("Shop Registered Successfully! ✅");
       setShowForm(false);
       setShopForm({ name: '', licenseNumber: '', address: '', contactNumber: '', type: 'PRIVATE' }); // Reset
@@ -58,10 +52,7 @@ const Resources = () => {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/shops/add-product', { ...prodForm, shopId: selectedShopId }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiService.shops.addProduct({ ...prodForm, shopId: selectedShopId });
       alert("Product Added!");
       setSelectedShopId(null);
       setProdForm({ name: '', price: '', unit: 'kg' });

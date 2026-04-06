@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { apiService } from '../services/api';
 import { getCrop } from '../utils/cropConstants';
 
@@ -149,7 +148,7 @@ const CropTimeline = () => {
     if (!userPhone) return;
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:3000/api/farms/${userPhone}`);
+      const res = await apiService.farms.getAll();
       const data: Farm[] = Array.isArray(res.data) ? res.data : res.data.data || [];
       setFarms(data);
       if (data.length > 0 && !selectedFarm) {

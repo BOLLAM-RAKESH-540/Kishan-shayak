@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, RefreshCw, DollarSign } from 'lucide-react';
-import axios from 'axios';
+import { apiService } from '../services/api';
 
 interface MarketData {
   crop: string;
@@ -35,7 +35,7 @@ const MarketPrices = () => {
   const fetchPrices = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:3000/api/market/prices');
+      const res = await apiService.market.getPrices();
       setPrices(res.data);
     } catch (error) {
       console.error("Error fetching prices", error);

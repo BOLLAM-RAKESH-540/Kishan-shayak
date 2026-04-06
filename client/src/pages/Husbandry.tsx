@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Milk, Beef, MapPin, Camera, Clock, Plus, Navigation,
-  CheckCircle, Timer, Phone, Loader2, IndianRupee, Trash2, Check
+  Milk, Beef, MapPin, Plus, Navigation, 
+  Loader2, Trash2, Check
 } from 'lucide-react';
 import axios from 'axios';
+import { apiService } from '../services/api';
 
 const Husbandry = () => {
   const [activeTab, setActiveTab] = useState<'LIVESTOCK' | 'MILK'>('LIVESTOCK');
@@ -31,7 +32,7 @@ const Husbandry = () => {
     if (!userPhone) return;
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:3000/api/husbandry/my-listings/${userPhone}`);
+      const res = await apiService.husbandry.getAll();
       setListings(res.data.data || []);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -46,7 +47,7 @@ const Husbandry = () => {
 
   const handleToggleStatus = async (id: string) => {
     try {
-      await axios.patch(`http://localhost:3000/api/husbandry/toggle-status/${id}?userId=${userPhone}`);
+      await apiService.husbandry.toggle(id);
       fetchMyListings();
     } catch (err) {
       alert("Failed to update status");
@@ -56,7 +57,7 @@ const Husbandry = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Permanently delete this listing?")) return;
     try {
-      await axios.delete(`http://localhost:3000/api/husbandry/delete/${id}?userId=${userPhone}`);
+      await apiService.husbandry.delete(id);
       fetchMyListings();
     } catch (err) {
       alert("Failed to delete listing");
@@ -111,7 +112,7 @@ const Husbandry = () => {
         quantityLiters: activeTab === 'MILK' ? parseFloat(formData.quantityLiters.toString()) : null,
       };
 
-      const response = await axios.post('http://localhost:3000/api/husbandry/create', payload);
+      const response = await apiService.husbandry.create(payload);
       
       if (response.data.success) {
         alert("Pashu Bazar listing published! ✅");

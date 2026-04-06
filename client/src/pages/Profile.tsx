@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, Phone, MapPin, Save, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiService } from '../services/api';
 
 // Define the shape of our User data
 interface UserProfile {
@@ -33,9 +33,7 @@ const Profile = () => {
           return;
         }
 
-        const res = await axios.get('http://localhost:3000/api/auth/profile', {
-          headers: { Authorization: `Bearer ${token}` }, // Send the token!
-        });
+        const res = await apiService.auth.getProfile();
 
         // Update state with backend data
         setProfile({

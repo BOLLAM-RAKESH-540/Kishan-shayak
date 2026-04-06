@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Sprout, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
+import { apiService } from '../../services/api';
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1); // 1: Enter Phone, 2: OTP & New Password
@@ -16,7 +16,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:3000/api/auth/forgot-password-otp', { phoneNumber });
+      await apiService.auth.forgotPasswordOtp(phoneNumber);
       alert('OTP sent to your mobile! 📱');
       setStep(2);
     } catch (error) {
@@ -31,7 +31,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:3000/api/auth/reset-password', { 
+      await apiService.auth.resetPassword({ 
         phoneNumber, 
         otp, 
         newPassword 
