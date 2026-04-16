@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Sprout, Phone, Lock, User, ArrowRight } from 'lucide-react';
+import { Sprout, Phone, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/api';
+import { toast } from 'react-hot-toast';
 
 const Register = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
@@ -17,14 +19,17 @@ const Register = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      // Connect to Backend API
       await apiService.auth.register(formData);
-      alert('Registration Successful! Please Login.');
-      navigate('/login'); // Redirect to login page
-    } catch (error) {
-      alert('Registration Failed. Phone number might already exist.');
+      toast.success('Registration Successful! Please Login.');
+      navigate('/login');
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Registration Failed. Phone number might already exist.';
+      toast.error(message);
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,9 +97,19 @@ const Register = () => {
 
           <button 
             type="submit" 
-            className="w-full bg-farm-green hover:bg-green-800 text-white font-bold py-3 rounded-lg flex items-center justify-center transition duration-300"
+            disabled={loading}
+            className="w-full bg-farm-green hover:bg-green-800 text-white font-bold py-3 rounded-lg flex items-center justify-center transition duration-300 disabled:opacity-70 disabled:cursor-not-allowed gap-2"
           >
-            Register <ArrowRight className="ml-2 w-5 h-5" />
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin w-5 h-5" />
+                Registering...
+              </>
+            ) : (
+              <>
+                Register <ArrowRight className="ml-2 w-5 h-5" />
+              </>
+            )}
           </button>
 
         </form>

@@ -6,7 +6,6 @@ import {
   TrendingUp,
   Wind,
   ShieldCheck,
-  Star,
   ArrowRight
 } from 'lucide-react';
 
@@ -35,36 +34,35 @@ const SoilTesting = () => {
   return (
     <div className="min-h-screen bg-white font-sans">
       
-      {/* 🔬 SCIENTIFIC LAB HEADER */}
-      <div className="h-[55vh] relative overflow-hidden flex items-center justify-center">
-        <img 
-          src="/images/modules/soil.png" 
-          alt="Soil Testing Lab" 
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-green-950/90 via-green-950/40 to-transparent"></div>
-        
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-8">
-           <div className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 animate-fade-in shadow-xl">
-              <Star size={12} className="fill-current" /> Certified Agri-Lab Facility
-           </div>
-           <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-none tracking-tighter max-w-2xl">
-              Understand Your <br />
-              <span className="text-green-400">Soil Science.</span>
-           </h1>
-           <p className="text-gray-200 text-xl font-medium max-w-xl mb-10 leading-relaxed shadow-sm">
-             Analyze Ph, NPK, and micronutrients at the cellular level. 
-             Get expert laboratory insights to double your crop yield.
-           </p>
-           
-           <div className="flex flex-wrap gap-4">
-              <button className="bg-white text-green-900 px-8 py-4 rounded-2xl font-black text-lg shadow-2xl hover:bg-green-50 transition transform hover:-translate-y-1">
-                 View Latest Report
-              </button>
-              <button className="bg-green-600/20 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-2xl font-black text-lg hover:bg-green-600/40 transition">
-                 Book New Test
-              </button>
-           </div>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-green-100 overflow-hidden mb-8 mt-8 mx-8 max-w-7xl lg:mx-auto">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/soil.png" 
+               alt="Soil Testing Lab" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-green-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Soil Science Hub
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Laboratory Analysis & Insights</p>
+                </div>
+                <div className="hidden md:flex gap-3">
+                   <button className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black shadow-xl hover:scale-105 transition transform text-xs">
+                      Book New Test
+                   </button>
+                </div>
+             </div>
+             <p className="text-sm text-gray-600 max-w-xl font-medium leading-relaxed">
+               Understand your land at the molecular level. Analyze pH, NPK, and micronutrients with our ISO-certified laboratory partners to double your yield.
+             </p>
+          </div>
         </div>
       </div>
 

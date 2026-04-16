@@ -1,4 +1,4 @@
-import { Droplets, Sun, Wheat, Star, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Droplets, Sun, Wheat, ArrowRight, ShieldCheck } from 'lucide-react';
 
 const CropInfo = () => {
   const crops = [
@@ -11,27 +11,33 @@ const CropInfo = () => {
   return (
     <div className="p-0 bg-white min-h-screen">
       
-      {/* 🌾 CINEMATIC CROP GALLERY HEADER */}
-      <div className="h-[50vh] relative overflow-hidden flex items-center justify-center">
-        <img 
-          src="/images/modules/crops.png" 
-          alt="Crop Varieties" 
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-green-900/90 via-green-900/40 to-transparent"></div>
-        
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-8 text-center sm:text-left">
-           <div className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-6 shadow-xl animate-fade-in">
-              <Star size={14} className="fill-current" /> Expert Crop Knowledge Bank
-           </div>
-           <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-none tracking-tighter">
-              Discover <br />
-              <span className="text-green-400">Crop Varieties.</span>
-           </h1>
-           <p className="text-gray-100 text-xl font-medium max-w-xl mb-10 leading-relaxed shadow-sm">
-             A complete scientific guide to growing Bharat's most vital crops. 
-             From seed selection to harvest management.
-           </p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-green-100 overflow-hidden mb-8 mt-8 mx-8 max-w-7xl lg:mx-auto">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/crops.png" 
+               alt="Crop Varieties" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-green-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Crop Knowledge Bank
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Scientific Growth Guides & Varieties</p>
+                </div>
+                <div className="hidden md:flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-100 font-black text-xs uppercase">
+                   <ShieldCheck size={18} /> Verified Research
+                </div>
+             </div>
+             <p className="text-sm text-gray-600 max-w-xl font-medium leading-relaxed">
+               A complete scientific guide to growing Bharat's most vital crops. From seed selection and soil requirements to advanced harvest management.
+             </p>
+          </div>
         </div>
       </div>
 

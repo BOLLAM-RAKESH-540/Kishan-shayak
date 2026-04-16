@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { apiService } from '../services/api';
 import { CROPS, getCrop } from '../utils/cropConstants';
-// Lucide icons removed
+import { useTitle } from '../hooks/useTitle';
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const FarmProfile = () => {
+  useTitle('My Farm');
   const [farms, setFarms] = useState<any[]>([]);
   const [summary, setSummary] = useState({ activeCrops: 0, totalAcres: 0, harvestedCrops: 0 });
 
@@ -14,6 +17,12 @@ const FarmProfile = () => {
   const [selectedCrop, setSelectedCrop] = useState<typeof CROPS[0] | null>(null);
   const [formData, setFormData] = useState({ fieldSizeAcres: '', startDate: '', endDate: '' });
   const [saving, setSaving] = useState(false);
+
+  // Edit modal state
+  const [editingFarm, setEditingFarm] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ fieldSizeAcres: '', startDate: '', endDate: '' });
+  const [editSaving, setEditSaving] = useState(false);
+
 
   const userPhone = (() => {
     try {
@@ -30,7 +39,7 @@ const FarmProfile = () => {
         apiService.farms.getAll(),
         apiService.farms.getSummary(),
       ]);
-      setFarms(Array.isArray(farmRes.data) ? farmRes.data : farmRes.data.data || []);
+      setFarms(farmRes.data.farms || []);
       setSummary(sumRes.data);
     } catch (e) { console.error(e); }
   };
@@ -52,9 +61,9 @@ const FarmProfile = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userPhone) return alert('Please login first!');
+    if (!userPhone) return toast.error('Please login first!');
     if (!selectedCrop || !formData.fieldSizeAcres || !formData.startDate)
-      return alert('Please fill in all required fields.');
+      return toast.error('Please fill in all required fields.');
     setSaving(true);
     try {
       await apiService.farms.add({
@@ -66,47 +75,103 @@ const FarmProfile = () => {
       reset();
       refresh();
     } catch (err: any) {
-      alert(`Failed to save: ${err.response?.data?.message || 'Check server connection'}`);
+      toast.error(`Failed to save: ${err.response?.data?.message || 'Check server connection'}`);
     } finally { setSaving(false); }
   };
 
   const handleHarvest = async (farmId: string) => {
     const price = window.prompt('Enter total amount earned from this harvest (₹):');
     if (price === null) return;
+    const toastId = toast.loading('Recording harvest...');
     try {
       await apiService.farms.harvest(farmId, { sellingPrice: parseFloat(price), quantity: 0, unit: 'kg' });
+      toast.success('Harvest recorded! 🌾', { id: toastId });
       refresh();
-    } catch { alert('Error updating harvest status'); }
+    } catch {
+      toast.error('Error updating harvest status', { id: toastId });
+    }
   };
 
   const handleDelete = async (farmId: string) => {
     if (!window.confirm('Delete this crop? All related expenses will also be removed.')) return;
-    try { await apiService.farms.delete(farmId); refresh(); }
-    catch { alert('Error deleting record'); }
+    const toastId = toast.loading('Deleting...');
+    try {
+      await apiService.farms.delete(farmId);
+      toast.success('Crop record deleted.', { id: toastId });
+      refresh();
+    } catch {
+      toast.error('Error deleting record', { id: toastId });
+    }
   };
+
+  const openEdit = (farm: any) => {
+    setEditingFarm(farm);
+    setEditForm({
+      fieldSizeAcres: String(farm.fieldSizeAcres),
+      startDate: farm.startDate?.split('T')[0] || '',
+      endDate: farm.endDate?.split('T')[0] || '',
+    });
+  };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFarm) return;
+    setEditSaving(true);
+    const toastId = toast.loading('Saving changes...');
+    try {
+      await apiService.farms.update(editingFarm.id, {
+        fieldSizeAcres: parseFloat(editForm.fieldSizeAcres),
+        startDate: editForm.startDate ? new Date(editForm.startDate).toISOString() : undefined,
+        endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : null,
+      });
+      toast.success('Farm details updated! ✅', { id: toastId });
+      setEditingFarm(null);
+      refresh();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update', { id: toastId });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen">
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-100 border border-green-200 rounded-xl flex items-center justify-center text-xl">
-            🌾
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-green-100 overflow-hidden mb-8">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/my_farm.png" 
+               alt="My Farm" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-green-900/10"></div>
           </div>
-          My Farm
-        </h1>
-
-        {/* Add Crop CTA — only shown when no modal open */}
-        {!step && (
-          <button
-            onClick={() => setStep('picker')}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md shadow-green-200 transition-all active:scale-95"
-          >
-            <span className="text-sm">➕</span> Add Crop
-          </button>
-        )}
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     My Farm
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Crops & Field Management</p>
+                </div>
+                {!step && (
+                  <button 
+                    onClick={() => setStep('picker')}
+                    className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black shadow-xl hover:scale-105 transition transform flex items-center gap-2"
+                  >
+                    <span>➕</span> Add Crop
+                  </button>
+                )}
+             </div>
+             <p className="text-sm text-gray-600 max-w-md font-medium leading-relaxed">
+               Manage your crop cycles, track field sizes, and monitor growth stages across your entire farm portfolio.
+             </p>
+          </div>
+        </div>
       </div>
 
       {/* ── Summary Cards ── */}
@@ -355,6 +420,15 @@ const FarmProfile = () => {
                     <div className="flex gap-2 flex-shrink-0">
                       {!isHarvested && (
                         <button
+                          title="Edit crop details"
+                          onClick={() => openEdit(farm)}
+                          className="p-2 bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition"
+                        >
+                          <span className="text-sm">✏️</span>
+                        </button>
+                      )}
+                      {!isHarvested && (
+                        <button
                           title="Mark as Harvested"
                           onClick={() => handleHarvest(farm.id)}
                           className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition"
@@ -389,6 +463,66 @@ const FarmProfile = () => {
           </div>
         )}
       </div>
+
+      {/* ── Edit Farm Modal ── */}
+      {editingFarm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEditingFarm(null)} />
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-fadeIn">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-2xl font-black text-gray-800">Edit Farm</h3>
+                <p className="text-sm text-gray-500 font-medium mt-0.5">{editingFarm.cropName}</p>
+              </div>
+              <button onClick={() => setEditingFarm(null)} className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-500">✕</button>
+            </div>
+            <form onSubmit={handleEditSave} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Area (Acres)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  required
+                  value={editForm.fieldSizeAcres}
+                  onChange={(e) => setEditForm({ ...editForm, fieldSizeAcres: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none font-bold text-gray-800"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Sowing Date</label>
+                  <input
+                    type="date"
+                    value={editForm.startDate}
+                    onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Est. Harvest</label>
+                  <input
+                    type="date"
+                    value={editForm.endDate}
+                    onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-400 outline-none text-gray-700"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingFarm(null)}
+                  className="flex-1 py-3 border border-gray-200 rounded-2xl text-gray-500 font-bold hover:bg-gray-50 transition">
+                  Cancel
+                </button>
+                <button type="submit" disabled={editSaving}
+                  className="flex-1 py-3 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition disabled:bg-gray-300">
+                  {editSaving ? 'Saving…' : '💾 Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

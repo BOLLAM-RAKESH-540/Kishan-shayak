@@ -7,8 +7,7 @@ import {
   Phone, 
   Info,
   TrendingUp,
-  Zap,
-  Star
+  Zap
 } from 'lucide-react';
 
 const MachineryTrade = () => {
@@ -35,51 +34,44 @@ const MachineryTrade = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 🏛️ CINEMATIC SHOWROOM HEADER */}
-      <div className="h-[60vh] relative overflow-hidden flex items-center justify-center">
-        <img 
-          src="/icons/showroom.png" 
-          alt="Machinery Showroom" 
-          className="absolute inset-0 w-full h-full object-cover" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
-        
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-8">
-           <div className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-6 animate-fade-in">
-              <Star size={14} className="fill-current" /> Certified Machinery Showroom
-           </div>
-           <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tighter max-w-2xl">
-              The Finest <br />
-              <span className="text-red-500">Agri-Machinery</span> <br />
-              Collection.
-           </h1>
-           <p className="text-gray-300 text-xl font-medium max-w-xl mb-10 leading-relaxed">
-             From factory-fresh models to certified pre-owned treasures, 
-             the modern showroom for India's hardworking farmers.
-           </p>
-           
-           <div className="flex gap-4">
-              <button 
-                 onClick={() => setActiveTab('new')}
-                 className={`px-8 py-4 rounded-2xl font-black text-lg transition-all ${
-                   activeTab === 'new' 
-                   ? 'bg-white text-black scale-105 shadow-2xl' 
-                   : 'bg-white/10 text-white backdrop-blur-md hover:bg-white/20'
-                 }`}
-              >
-                Browse New
-              </button>
-              <button 
-                 onClick={() => setActiveTab('used')}
-                 className={`px-8 py-4 rounded-2xl font-black text-lg transition-all ${
-                   activeTab === 'used' 
-                   ? 'bg-red-600 text-white scale-105 shadow-2xl' 
-                   : 'bg-white/10 text-white backdrop-blur-md hover:bg-white/20'
-                 }`}
-              >
-                Pre-owned Deals
-              </button>
-           </div>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-red-100 overflow-hidden mb-8 mt-8 mx-8 max-w-7xl lg:mx-auto">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/trade.png" 
+               alt="Machinery Showroom" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-red-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Agri-Showroom
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Premium New & Certified Pre-owned Machinery</p>
+                </div>
+                <div className="hidden md:flex gap-2">
+                   <button 
+                      onClick={() => setActiveTab('new')}
+                      className={`px-4 py-2 rounded-xl font-black text-xs transition-all ${activeTab === 'new' ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                   >
+                     New
+                   </button>
+                   <button 
+                      onClick={() => setActiveTab('used')}
+                      className={`px-4 py-2 rounded-xl font-black text-xs transition-all ${activeTab === 'used' ? 'bg-black text-white shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                   >
+                     Used
+                   </button>
+                </div>
+             </div>
+             <p className="text-sm text-gray-600 max-w-xl font-medium leading-relaxed">
+               Browse through factor-fresh models or certified pre-owned treasures. The professional showroom for India's hardworking farmers.
+             </p>
+          </div>
         </div>
       </div>
 

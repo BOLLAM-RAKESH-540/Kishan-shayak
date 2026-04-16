@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Milk, Beef, MapPin, Plus, Navigation, 
+  Milk, Beef, MapPin, Navigation, 
   Loader2, Trash2, Check
 } from 'lucide-react';
 import axios from 'axios';
@@ -137,16 +137,37 @@ const Husbandry = () => {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <Beef className="text-orange-700" size={32} /> Pashu Bazaar
-          </h1>
-          <p className="text-gray-500">Manage your farm listings</p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-orange-100 overflow-hidden mb-8">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/husbandry.png" 
+               alt="Pashu Bazaar" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-orange-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Pashu Bazaar
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Livestock & Dairy Marketplace</p>
+                </div>
+                <button 
+                  onClick={() => setShowForm(true)} 
+                  className="bg-orange-600 text-white px-6 py-3 rounded-2xl font-black shadow-xl hover:scale-105 transition transform flex items-center gap-2"
+                >
+                  <span>➕</span> Sell Now
+                </button>
+             </div>
+             <p className="text-sm text-gray-600 max-w-md font-medium leading-relaxed">
+               Trade cattle, poultry, and fresh dairy products with local buyers. Access verified listings and secure GPS-tagged locations.
+             </p>
+          </div>
         </div>
-        <button onClick={() => setShowForm(true)} className="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-green-700 transition shadow-lg">
-          <Plus size={20} /> Sell Now
-        </button>
       </div>
 
       <div className="flex p-1 bg-gray-200 rounded-2xl mb-8 w-full max-w-md">

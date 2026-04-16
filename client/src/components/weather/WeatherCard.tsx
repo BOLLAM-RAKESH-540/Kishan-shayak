@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { apiService } from '../../services/api';
 
 // 🖼️ SEASONAL & TIME-BASED BACKGROUNDS
 const BG_IMAGES = {
@@ -139,8 +140,7 @@ const WeatherCard = () => {
 
   const fetchWeather = async (lat: number, lon: number) => {
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
-      const res = await axios.get(url);
+      const res = await apiService.weather.get(lat, lon);
       const data = res.data;
       
       setCurrent({ 

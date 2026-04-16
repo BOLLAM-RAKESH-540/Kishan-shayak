@@ -27,27 +27,33 @@ const Helpline = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       
-      {/* 📞 MODERN HELPLINE HEADER */}
-      <div className="h-[40vh] relative overflow-hidden flex items-center justify-center bg-indigo-900">
-        <img 
-          src="/images/modules/helpline_local.png" 
-          alt="Modern Helpline Support" 
-          className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-1000 hover:scale-105" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-indigo-900 via-indigo-900/40 to-transparent"></div>
-        
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-8">
-           <div className="inline-flex items-center gap-2 bg-indigo-500 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-6 shadow-xl animate-fade-in">
-              <Shield size={14} className="fill-current" /> 24x7 Farmer Protection
-           </div>
-           <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-none tracking-tighter max-w-2xl">
-              Modern <br />
-              <span className="text-indigo-400">Helpline Portal.</span>
-           </h1>
-           <p className="text-gray-100 text-xl font-medium max-w-xl mb-10 leading-relaxed drop-shadow-sm">
-             Professional agricultural support at your fingertips. 
-             Connecting you with experts and emergency services instantly.
-           </p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-indigo-100 overflow-hidden mb-8 mt-8 mx-8 max-w-7xl lg:mx-auto">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/helpline_final.png" 
+               alt="Modern Helpline Support" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-indigo-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Helpline Portal
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">24/7 Professional Farmer Support</p>
+                </div>
+                <div className="hidden md:flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-100 font-black text-xs uppercase">
+                   <Shield size={18} /> Verified Support
+                </div>
+             </div>
+             <p className="text-sm text-gray-600 max-w-xl font-medium leading-relaxed">
+               Connecting you with agricultural experts and emergency services instantly. Professional assistance for schemes, medical emergencies, and technical queries.
+             </p>
+          </div>
         </div>
       </div>
 

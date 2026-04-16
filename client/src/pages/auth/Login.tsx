@@ -1,35 +1,34 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sprout } from 'lucide-react';
-import { apiService } from '../../services/api'; // 🟢 Updated: Use your new central API service
+import { Sprout, Loader2 } from 'lucide-react';
+import { apiService } from '../../services/api'; 
+import { toast } from 'react-hot-toast';
 
 const Login = () => {
   const [formData, setFormData] = useState({ phoneNumber: '', password: '' });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       console.log("Sending login data:", formData);
 
-      // 🟢 Updated: Using apiService instead of raw axios
       const res = await apiService.auth.login(formData);
       
-      // 🟢 CRUCIAL: Dashboard.tsx expects a 'user' object and a 'token'
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user)); 
       
-      // Also keeping these for backward compatibility if needed elsewhere
-      localStorage.setItem('userId', res.data.user.id); 
-      localStorage.setItem('userName', res.data.user.name);
-
+      toast.success(`Welcome back, ${res.data.user.name}!`);
       console.log("Login Successful! Redirecting to Dashboard...");
       navigate('/dashboard');
     } catch (error: any) {
       console.error("Login Error:", error);
-      // Better error feedback
       const message = error.response?.data?.message || 'Invalid Mobile Number or Password';
-      alert(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,13 +81,52 @@ const Login = () => {
             />
           </div>
 
-          <button type="submit" className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition shadow-md active:transform active:scale-95">
-            Login to Account
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition shadow-md active:transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              'Login to Account'
+            )}
           </button>
         </form>
 
-        <p className="text-center mt-6 text-gray-600 text-sm">
-          New Farmer? <Link to="/register" className="text-green-600 font-bold hover:underline ml-1">Create Account</Link>
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500 font-bold uppercase tracking-widest text-[10px]">Or continue with</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+           <button 
+             type="button"
+             onClick={() => toast.success('Google Login Simulator: Plug in your Client ID to activate!')}
+             className="flex items-center justify-center gap-2 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition font-bold text-sm text-gray-700"
+           >
+             <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-5 h-5" alt="Google" />
+             Google
+           </button>
+           <button 
+             type="button"
+             onClick={() => toast.success('Apple Login Simulator: Plug in your Apple Developer Keys to activate!')}
+             className="flex items-center justify-center gap-2 py-3 border-2 border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition font-bold text-sm text-gray-700"
+           >
+             <span className="text-xl -mt-1">🍎</span>
+             Apple
+           </button>
+        </div>
+
+        <p className="text-center mt-8 text-gray-600 text-sm font-medium">
+          New Farmer? <Link to="/register" className="text-green-600 font-black hover:underline ml-1">Create Account</Link>
         </p>
       </div>
     </div>

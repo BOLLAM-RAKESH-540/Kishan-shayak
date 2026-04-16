@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Landmark, ArrowRight, Search, FileText, CheckCircle, ExternalLink } from 'lucide-react';
+import { Search, ArrowRight, FileText, ExternalLink } from 'lucide-react';
 
 const Schemes = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -76,26 +76,41 @@ const Schemes = () => {
     // 🟢 FULL WIDTH CONTAINER
     <div className="p-8 bg-white/85 backdrop-blur-sm min-h-screen">
       
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Landmark className="text-yellow-600" size={32} /> Government Schemes
-          </h1>
-          <p className="text-gray-500">Find subsidies and financial aid eligible for you</p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-orange-100 overflow-hidden mb-8">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/schemes.png" 
+               alt="Government Schemes" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-orange-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Govt. Schemes
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Subsidies & Financial Support</p>
+                </div>
+                <div className="relative w-full md:w-64">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                   <input
+                     type="text"
+                     placeholder="Search schemes..."
+                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-bold"
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                   />
+                </div>
+             </div>
+             <p className="text-sm text-gray-600 max-w-md font-medium leading-relaxed">
+               Access state and central government initiatives. Apply for low-interest loans, crop insurance, and investment support.
+             </p>
+          </div>
         </div>
-      </div>
-
-      {/* 🔍 Search Bar */}
-      <div className="relative mb-8 max-w-lg">
-        <div className="absolute left-3 top-3 text-gray-400">
-          <Search size={20} />
-        </div>
-        <input 
-          type="text"
-          placeholder="Search schemes (e.g. Loan, Insurance)..."
-          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 outline-none shadow-sm"
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       </div>
 
       {/* 🏛️ TABS: Central vs State */}

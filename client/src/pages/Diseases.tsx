@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Thermometer, Droplets, ShieldAlert, Search } from 'lucide-react';
+import { Search, Thermometer, Droplets } from 'lucide-react';
 import { apiService } from '../services/api'; 
 
 interface Treatment {
@@ -99,26 +99,42 @@ const Diseases = () => {
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
 
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-green-900 flex items-center gap-2">
-              <ShieldAlert className="text-red-500" size={36} /> Disease Encyclopedia
-            </h1>
-            <p className="text-gray-600">Identify and treat crop infections early</p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-red-100 overflow-hidden mb-8">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/disease.png" 
+               alt="Disease Encyclopedia" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-red-900/10"></div>
           </div>
-
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search disease..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Disease Encyclopedia
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Identify & Treat Crop Infections</p>
+                </div>
+                <div className="relative w-full md:w-64">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                   <input
+                     type="text"
+                     placeholder="Search disease..."
+                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all font-bold"
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                   />
+                </div>
+             </div>
+             <p className="text-sm text-gray-600 max-w-md font-medium leading-relaxed">
+               Early detection saves your yield. Browse our scientific database of pests, blights, and viruses across regional crops.
+             </p>
           </div>
         </div>
+      </div>
 
         {/* Crop Selector Tabs — realistic icon style */}
         <div className="flex space-x-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">

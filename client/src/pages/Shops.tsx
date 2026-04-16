@@ -121,14 +121,30 @@ export default function Shops() {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen transition-colors">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-8 bg-white/40 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-white/50">
-        <div className="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center shadow-inner border border-purple-200/50">
-          <Store size={32} className="text-purple-700" strokeWidth={1.5} />
-        </div>
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Find Shops</h1>
-          <p className="text-gray-700 font-medium mt-1">Locate nearby agricultural shops</p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-purple-100 overflow-hidden mb-8">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/shops.png" 
+               alt="Agri-Supply Network" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-purple-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Agri-Supply Network
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Locate Nearby Dealers & Shops</p>
+                </div>
+             </div>
+             <p className="text-sm text-gray-600 max-w-md font-medium leading-relaxed">
+               Find verified sellers for seeds, fertilizers, and equipment. Compare ratings and contact dealers directly.
+             </p>
+          </div>
         </div>
       </div>
 

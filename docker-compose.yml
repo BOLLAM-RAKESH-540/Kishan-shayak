@@ -14,5 +14,13 @@ services:
     volumes:
       - kisan_data:/var/lib/postgresql/data
 
+  # Caching Layer for Kisan Sahayak
+  kisan-redis:
+    image: redis:7-alpine
+    container_name: kisan-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
 volumes:
   kisan_data:

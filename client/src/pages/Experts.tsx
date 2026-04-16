@@ -4,7 +4,6 @@ import {
   Phone, 
   MessageCircle, 
   Briefcase, 
-  Star, 
   TrendingUp, 
   ShieldCheck, 
   Users, 
@@ -71,23 +70,34 @@ const Experts = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       
-      {/* 🧬 KNOWLEDGE HUB HEADER */}
-      <div className="h-[35vh] relative overflow-hidden flex items-center justify-center bg-blue-900">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-800 opacity-90"></div>
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
-        
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-8">
-           <div className="inline-flex items-center gap-2 bg-blue-500 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-6 shadow-xl animate-fade-in">
-              <Star size={14} className="fill-current" /> Expert Yield Maximization
-           </div>
-           <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-none tracking-tighter max-w-2xl">
-              Agri-Expert <br />
-              <span className="text-blue-400">Knowledge Hub.</span>
-           </h1>
-           <p className="text-gray-100 text-xl font-medium max-w-xl mb-10 leading-relaxed drop-shadow-sm">
-             Bridging scientific research with traditional farming wisdom. 
-             Consult the experts to achieve record-breaking harvests.
-           </p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-indigo-100 overflow-hidden mb-8 mt-8 mx-8 max-w-7xl lg:mx-auto">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/experts.png" 
+               alt="Agri-Expert Knowledge Hub" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-indigo-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Agri-Expert Hub
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Scientific Research & Traditional Wisdom</p>
+                </div>
+                <div className="hidden md:flex flex-col items-end">
+                   <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest leading-none mb-1 text-right">Global Coverage</p>
+                   <p className="text-2xl font-black text-blue-600">24/7 Experts</p>
+                </div>
+             </div>
+             <p className="text-sm text-gray-600 max-w-xl font-medium leading-relaxed">
+               Bridging scientific research with traditional farming wisdom. Consult the experts to achieve record-breaking harvests and solve complex field issues.
+             </p>
+          </div>
         </div>
       </div>
 

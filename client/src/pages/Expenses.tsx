@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { apiService } from '../services/api'; 
+import EmptyState from '../components/common/EmptyState';
 import { getCrop } from '../utils/cropConstants';
+import { useTitle } from '../hooks/useTitle';
+
 
 const Expenses = () => {
+  useTitle('Expenses');
   const [expenses, setExpenses] = useState<any[]>([]);
   const [yields, setYields] = useState<any[]>([]);
   const [farms, setFarms] = useState<any[]>([]); 
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [subLoading, setSubLoading] = useState(false);
   
   const [transactionType, setTransactionType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
 
@@ -16,8 +24,12 @@ const Expenses = () => {
   const user = JSON.parse(userString);
   const userPhone = user.phoneNumber || user.phone || localStorage.getItem('phoneNumber'); 
 
+  // 🟢 Read farmId and cropName from URL params (when navigated from FarmProfile "Add Crop Expense")
+  const [searchParams] = useSearchParams();
+  const preselectedFarmId = searchParams.get('farmId') || '';
+
   const [formData, setFormData] = useState({
-    farmId: '', 
+    farmId: preselectedFarmId, 
     category: 'Seeds',
     itemName: '', 
     amount: '',
@@ -47,10 +59,10 @@ const Expenses = () => {
       setLoading(true);
 
       const expRes = await apiService.expenses.getAll();
-      setExpenses(expRes.data || []);
+      setExpenses(expRes.data.expenses || []);
 
       const farmRes = await apiService.farms.getAll();
-      const actualFarms = farmRes.data.data || farmRes.data;
+      const actualFarms = farmRes.data.farms || [];
       
       if (Array.isArray(actualFarms)) {
         setFarms(actualFarms);
@@ -71,16 +83,18 @@ const Expenses = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.farmId) return alert("Please select a crop!");
+    if (subLoading) return; // Idempotency: Prevent double submission
+    if (!formData.farmId) return toast.error("Please select a crop!");
     
     try {
+      setSubLoading(true);
       if (transactionType === 'EXPENSE') {
         await apiService.expenses.create({ 
           ...formData, 
           userId: userPhone, 
           itemName: formData.note || formData.category 
         });
-        alert("Expense Added Successfully! ✅");
+        toast.success('Expense added successfully! ✅');
       } else {
         const calculatedAmount = Number(formData.quantity) * Number(formData.pricePerUnit);
         await apiService.farms.addYield({
@@ -90,16 +104,31 @@ const Expenses = () => {
           unit: formData.unit,
           soldDate: formData.date
         });
-        alert("Income Logged Successfully! ✅");
+        toast.success('Income logged successfully! ✅');
       }
 
       setShowForm(false);
-      setFormData({ farmId: '', category: 'Seeds', itemName: '', amount: '', quantity: '1', unit: 'Total Yield', pricePerUnit: '', date: new Date().toISOString().split('T')[0], note: '' });
+      setFormData({ farmId: preselectedFarmId, category: 'Seeds', itemName: '', amount: '', quantity: '1', unit: 'Total Yield', pricePerUnit: '', date: new Date().toISOString().split('T')[0], note: '' });
       loadPageData();
     } catch (error) {
-      alert(`Failed to add ${transactionType.toLowerCase()}.`);
+      toast.error(`Failed to add ${transactionType.toLowerCase()}. Check your connection.`);
+    } finally {
+      setSubLoading(false);
     }
   };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!window.confirm('Remove this expense record?')) return;
+    const toastId = toast.loading('Deleting...');
+    try {
+      await apiService.expenses.delete(id);
+      toast.success('Expense deleted!', { id: toastId });
+      loadPageData();
+    } catch {
+      toast.error('Failed to delete expense.', { id: toastId });
+    }
+  };
+
 
   const totalExpenses = expenses.reduce((sum, item) => sum + Number(item.amount), 0);
   const totalIncome = yields.reduce((sum, item) => sum + Number(item.sellingPrice), 0);
@@ -113,47 +142,51 @@ const Expenses = () => {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <span className="text-3xl">💰</span> Financial Manager
-          </h1>
-          <p className="text-gray-500">Accounts for: {user.name || userPhone}</p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-red-100 overflow-hidden mb-8">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/expenses.png" 
+               alt="Financial Manager" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-red-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-6">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Financial Manager
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Expense & Income Ledger</p>
+                </div>
+                <button 
+                  onClick={() => setShowForm(!showForm)} 
+                  className="bg-red-600 text-white px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition transform flex items-center gap-2"
+                >
+                  <span>➕</span> {showForm ? "Close" : "Add Record"}
+                </button>
+             </div>
+             
+             {/* Stats integrated into banner */}
+             <div className="flex flex-wrap gap-4">
+                <div className="bg-red-50 px-4 py-2 rounded-xl border border-red-100">
+                   <p className="text-[10px] uppercase font-black text-red-400 leading-none mb-1">Spent</p>
+                   <p className="text-xl font-black text-red-600">₹{totalExpenses.toLocaleString()}</p>
+                </div>
+                <div className="bg-green-50 px-4 py-2 rounded-xl border border-green-100">
+                   <p className="text-[10px] uppercase font-black text-green-400 leading-none mb-1">Earned</p>
+                   <p className="text-xl font-black text-green-600">₹{totalIncome.toLocaleString()}</p>
+                </div>
+                <div className={`px-4 py-2 rounded-xl border ${isProfit ? 'bg-green-600 border-green-500 text-white' : 'bg-red-600 border-red-500 text-white'}`}>
+                   <p className="text-[10px] uppercase font-black opacity-70 leading-none mb-1">{isProfit ? 'Net Profit' : 'Net Loss'}</p>
+                   <p className="text-xl font-black">₹{netBalance.toLocaleString()}</p>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center text-2xl">↘️</div>
-          <div>
-            <p className="text-sm text-gray-500 font-bold uppercase">Total Expenses</p>
-            <h3 className="text-2xl font-bold text-gray-800">₹{totalExpenses.toLocaleString()}</h3>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center text-2xl">↗️</div>
-          <div>
-            <p className="text-sm text-gray-500 font-bold uppercase">Total Income</p>
-            <h3 className="text-2xl font-bold text-gray-800">₹{totalIncome.toLocaleString()}</h3>
-          </div>
-        </div>
-
-        <div className={`p-6 rounded-2xl shadow-sm border flex items-center gap-4 text-white ${isProfit ? 'bg-green-600 border-green-500' : 'bg-red-600 border-red-500'}`}>
-          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl">
-            {isProfit ? '📈' : '📉'}
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase opacity-80">{isProfit ? 'Net Profit' : 'Net Loss'}</p>
-            <h3 className="text-3xl font-bold">₹{netBalance.toLocaleString()}</h3>
-          </div>
-        </div>
-      </div>
-
-      <button onClick={() => setShowForm(!showForm)} className="mb-8 bg-red-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-red-700 transition shadow-sm w-full md:w-auto justify-center">
-        <span className="text-lg">➕</span> {showForm ? "Close Form" : "Add New Record"}
-      </button>
 
       {showForm && (
         <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -277,9 +310,20 @@ const Expenses = () => {
             
             <div className="md:col-span-2">
               <button 
-                className={`w-full text-white font-bold py-3 rounded-lg transition shadow-md ${transactionType === 'EXPENSE' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                type="submit"
+                disabled={subLoading}
+                className={`w-full text-white font-bold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2 ${
+                  subLoading ? 'opacity-70 cursor-not-allowed' : ''
+                } ${transactionType === 'EXPENSE' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
               >
-                {transactionType === 'EXPENSE' ? 'Save Expense' : 'Save Income'}
+                {subLoading ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  transactionType === 'EXPENSE' ? 'Save Expense' : 'Save Income'
+                )}
               </button>
             </div>
           </form>
@@ -291,14 +335,16 @@ const Expenses = () => {
         <h3 className="font-bold text-gray-700 flex items-center gap-2 mb-2"><span className="text-xl">📊</span> Overall Summary By Crop</h3>
         
         {loading ? (
-           <p className="text-center text-gray-500 py-10 font-medium">Loading your records...</p>
+          <div className="text-center py-20 text-gray-500 font-bold animate-pulse uppercase tracking-widest text-xs">
+            Loading your records...
+          </div>
         ) : allTransactions.length > 0 ? (
-          farms.filter(farm => allTransactions.some(t => t.farmId === farm.id)).map(farm => {
-            const farmTransactions = allTransactions.filter(t => t.farmId === farm.id);
+          farms.filter((farm: any) => allTransactions.some((t: any) => t.farmId === farm.id)).map((farm: any) => {
+            const farmTransactions = allTransactions.filter((t: any) => t.farmId === farm.id);
             const cropInfo = getCrop(farm.cropName);
             const isHarvested = farm.status === 'HARVESTED';
-            const totalSpent = farmTransactions.filter(t => t.type === 'EXPENSE').reduce((sum, item) => sum + Number(item.amount), 0);
-            const totalEarned = farmTransactions.filter(t => t.type === 'INCOME').reduce((sum, item) => sum + Number(item.amount), 0);
+            const totalSpent = farmTransactions.filter((t: any) => t.type === 'EXPENSE').reduce((sum: number, item: any) => sum + Number(item.amount), 0);
+            const totalEarned = farmTransactions.filter((t: any) => t.type === 'INCOME').reduce((sum: number, item: any) => sum + Number(item.amount), 0);
             const cropProfit = totalEarned - totalSpent;
 
             return (
@@ -339,7 +385,7 @@ const Expenses = () => {
                       : getCategoryStyle(item.category);
                       
                     return (
-                      <div key={item.id} className={`flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border ${style.border} hover:shadow-md transition-shadow`}>
+                      <div key={item.id} className={`flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border ${style.border} hover:shadow-md transition-shadow group`}>
                         <div className="flex items-center gap-4">
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center ${style.bg} ${style.text}`}>
                             {style.icon}
@@ -355,9 +401,20 @@ const Expenses = () => {
                             </p>
                           </div>
                         </div>
-                        <p className={`font-bold text-lg ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
-                          {isIncome ? '+' : '-'}₹{Number(item.amount).toLocaleString()}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          <p className={`font-bold text-lg ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                            {isIncome ? '+' : '-'}₹{Number(item.amount).toLocaleString()}
+                          </p>
+                          {!isIncome && (
+                            <button
+                              onClick={() => handleDeleteExpense(item.id)}
+                              title="Delete expense"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -384,11 +441,13 @@ const Expenses = () => {
             );
           })
         ) : (
-          <div className="text-center bg-white p-10 rounded-2xl border border-dashed border-gray-200">
-            <span className="text-5xl block mb-3">🧾</span>
-            <p className="text-gray-500 font-semibold text-lg">No records found yet.</p>
-            <p className="text-gray-400 text-sm mt-1">Use the "Add New Record" button above.</p>
-          </div>
+          <EmptyState 
+            title="Your Financial Ledger is Empty"
+            description="Track every seed, fertilizer bag, and harvest sale to calculate your real profit."
+            actionLabel="Log First Record"
+            actionLink="#" 
+            icon={<span className="text-5xl">🚜</span>}
+          />
         )}
       </div>
     </div>

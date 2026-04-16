@@ -12,13 +12,36 @@ enum ListingType {
   MILK
 }
 
+enum Role {
+  FARMER
+  EXPERT
+  ADMIN
+}
+
 model User {
   id           String    @id @default(uuid())
   phoneNumber  String    @unique
   passwordHash String?
   name         String?
   location     String?
-  createdAt    DateTime  @default(now())
+  profileImage String?
+  role         Role      @default(FARMER)
+  
+  // Security & Verification
+  isVerified      Boolean   @default(false)
+  failedAttempts  Int       @default(0)
+  lockUntil       DateTime?
+  mfaEnabled      Boolean   @default(false)
+  mfaSecret       String?
+  lastLoginAt     DateTime?
+  
+  // Professional Profile Fields
+  bio             String?   @db.Text
+  totalLand       Float?    // Total ownership in Acres
+  experienceYears Int?      // Years in farming
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
 
   // Relations
   vehicleWorks      VehicleWork[]
@@ -27,6 +50,11 @@ model User {
   supplierShops     SupplierShop[]
   rentals           VehicleRental[]
   husbandryListings HusbandryListing[]
+  communityPosts    CommunityPost[]
+  communityComments CommunityComment[]
+  communityLikes    CommunityLike[]
+  soilTests         SoilTestRequest[]
+  wasteListings     WasteListing[]
 
   @@index([phoneNumber])
 }
@@ -68,6 +96,7 @@ model FarmProfile {
   expenses        Expense[]
   activities      FieldActivity[]
   yields          YieldLog[]
+  soilTests       SoilTestRequest[]
 
   @@index([userId, status])
 }
@@ -75,7 +104,7 @@ model FarmProfile {
 model FieldActivity {
   id          String      @id @default(uuid())
   farmId      String
-  farm        FarmProfile @relation(fields: [farmId], references: [id])
+  farm        FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
   type        String
   productName String
   quantity    Float
@@ -89,7 +118,7 @@ model Expense {
   user      User         @relation(fields: [userId], references: [phoneNumber])
   
   farmId    String?
-  farm      FarmProfile? @relation(fields: [farmId], references: [id])
+  farm      FarmProfile? @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   category  String
   itemName  String
@@ -104,7 +133,7 @@ model Expense {
 model YieldLog {
   id           String      @id @default(uuid())
   farmId       String
-  farm         FarmProfile @relation(fields: [farmId], references: [id])
+  farm         FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
   quantity     Float
   unit         String
   sellingPrice Float
@@ -212,4 +241,75 @@ model Treatment {
   disease      Disease  @relation(fields: [diseaseId], references: [id])
 
   @@index([diseaseId])
+}
+
+model CommunityPost {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [phoneNumber])
+  content   String?            @db.Text
+  imageUrl  String?
+  cropTag   String?            // Optional crop tagging
+  location  String?            // To filter by local area
+  likes     CommunityLike[]
+  comments  CommunityComment[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+model CommunityComment {
+  id        String          @id @default(uuid())
+  postId    String
+  post      CommunityPost   @relation(fields: [postId], references: [id])
+  userId    String
+  user      User            @relation(fields: [userId], references: [phoneNumber])
+  content   String          @db.Text
+  createdAt DateTime        @default(now())
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model CommunityLike {
+  id        String          @id @default(uuid())
+  postId    String
+  post      CommunityPost   @relation(fields: [postId], references: [id])
+  userId    String
+  user      User            @relation(fields: [userId], references: [phoneNumber])
+  createdAt DateTime        @default(now())
+
+  @@unique([postId, userId])
+}
+
+model SoilTestRequest {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [phoneNumber])
+  farmId      String?
+  farm        FarmProfile? @relation(fields: [farmId], references: [id])
+  status      String   @default("PENDING") // PENDING, PROCESSING, COMPLETED
+  sampleDate  DateTime @default(now())
+  results     String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model WasteListing {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [phoneNumber])
+  type        String
+  quantity    Float
+  unit        String
+  price       Float?
+  isAvailable Boolean  @default(true)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
 }

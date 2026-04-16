@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma";
 
-const prisma = new PrismaClient();
 
 // 1. Add New Work Entry (Log for Tractor/Harvester work)
 export const addVehicleWork = async (req: Request, res: Response) => {
@@ -49,12 +48,12 @@ export const getVehicleWorks = async (req: Request, res: Response) => {
         userId: String(userPhone) 
     };
 
-    // 🟢 Optional: Filter by Customer Phone number
+    // 🟢 Filter by Customer Phone number or Name
     if (search) {
-      whereCondition.customerPhone = { 
-        contains: String(search),
-        mode: 'insensitive' // Makes search easier for users
-      };
+      whereCondition.OR = [
+        { customerPhone: { contains: String(search) } },
+        { customerName: { contains: String(search), mode: 'insensitive' } }
+      ];
     }
 
     const works = await prisma.vehicleWork.findMany({
@@ -68,3 +67,55 @@ export const getVehicleWorks = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch records" });
   }
 };
+
+// 3. Mark a Job as Paid
+export const markPaid = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userPhone = (req as any).phoneNumber;
+
+    const job = await prisma.vehicleWork.findUnique({ where: { id } });
+
+    if (!job) {
+      return res.status(404).json({ message: "Job record not found" });
+    }
+
+    if (job.userId !== String(userPhone)) {
+      return res.status(403).json({ message: "Unauthorized: This record does not belong to you" });
+    }
+
+    const updated = await prisma.vehicleWork.update({
+      where: { id },
+      data: { isPaid: true },
+    });
+
+    console.log(`✅ Job ${id} marked as paid for ${userPhone}`);
+    res.json(updated);
+  } catch (error: any) {
+    console.error("❌ Error marking paid:", error);
+    res.status(500).json({ message: "Failed to mark as paid", details: error.message });
+  }
+};
+
+// 4. Delete a Vehicle Work Record
+export const deleteVehicleWork = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userPhone = (req as any).phoneNumber;
+
+    const job = await prisma.vehicleWork.findUnique({ where: { id } });
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    if (job.userId !== String(userPhone)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    await prisma.vehicleWork.delete({ where: { id } });
+    res.json({ message: "Job record deleted successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: "Failed to delete record", details: error.message });
+  }
+};

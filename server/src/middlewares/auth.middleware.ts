@@ -23,9 +23,15 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
         return res.status(401).json({ message: "Invalid token format" });
     }
 
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error("❌ FATAL: JWT_SECRET is not set in environment");
+      return res.status(500).json({ message: "Server configuration error" });
+    }
+
     // 3. Verify the token 
     // 🟢 Decoded now includes phoneNumber from the login payload
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as { 
+    const decoded = jwt.verify(token, secret) as { 
       userId: string; 
       phoneNumber: string; 
     };
@@ -34,8 +40,6 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
     (req as any).userId = decoded.userId;
     (req as any).phoneNumber = decoded.phoneNumber;
     
-    console.log("🔒 AuthMiddleware: User authenticated", decoded.phoneNumber);
-
     next(); 
   } catch (error) {
     console.error("🔒 AuthMiddleware: Token verification failed");

@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 
-const prisma = new PrismaClient();
 
 // ✅ 1. CREATE EXPENSE
 export const createExpense = async (req: Request, res: Response) => {
@@ -75,10 +74,48 @@ export const getExpenses = async (req: Request, res: Response) => {
       }
     });
 
-    return res.status(200).json(expenses);
+    return res.status(200).json({
+      expenses,
+      metadata: {
+        totalCount: expenses.length,
+        page: 1,
+        limit: 1000 // Placeholder for full pagination implementation later
+      }
+    });
 
   } catch (error) {
     console.error("❌ Error fetching expenses:", error);
     return res.status(500).json({ error: "Failed to fetch expenses" });
   }
 };
+
+// ✅ 3. DELETE EXPENSE (Owner only)
+export const deleteExpense = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userPhone = (req as any).phoneNumber;
+
+    if (!userPhone) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const expense = await prisma.expense.findUnique({ where: { id } });
+
+    if (!expense) {
+      return res.status(404).json({ error: "Expense not found" });
+    }
+
+    if (expense.userId !== String(userPhone)) {
+      return res.status(403).json({ error: "Unauthorized: This expense does not belong to you" });
+    }
+
+    await prisma.expense.delete({ where: { id } });
+
+    console.log(`✅ Expense ${id} deleted by ${userPhone}`);
+    return res.status(200).json({ success: true, message: "Expense deleted successfully" });
+
+  } catch (error: any) {
+    console.error("❌ Error deleting expense:", error);
+    return res.status(500).json({ error: "Failed to delete expense", details: error.message });
+  }
+};

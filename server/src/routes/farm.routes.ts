@@ -8,39 +8,43 @@ import {
   getCropProfitAnalysis,
   addYield,
   addFieldActivity,
-  getFieldActivities
+  getFieldActivities,
+  updateFarm,
 } from '../controllers/farm.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // ✅ IMPORTANT: Specific named paths MUST come before wildcard params
-// Otherwise Express matches /:userId before /summary/:userId
 
-// POST  /api/farms/add
-router.post('/add', addFarm);
+// POST  /api/farms/add — Protected: must be logged in
+router.post('/add', authMiddleware, addFarm);
 
-// GET   /api/farms/summary/:userId
-router.get('/summary/:userId', getFarmSummary);
+// GET   /api/farms/summary/:userId — Protected
+router.get('/summary/:userId', authMiddleware, getFarmSummary);
 
-// GET   /api/farms/profit/:farmId
-router.get('/profit/:farmId', getCropProfitAnalysis);
+// GET   /api/farms/profit/:farmId — Protected
+router.get('/profit/:farmId', authMiddleware, getCropProfitAnalysis);
 
-// POST  /api/farms/yield/add
-router.post('/yield/add', addYield);
+// POST  /api/farms/yield/add — Protected
+router.post('/yield/add', authMiddleware, addYield);
 
-// POST  /api/farms/activity/add  ← must be before wildcards
-router.post('/activity/add', addFieldActivity);
+// POST  /api/farms/activity/add — Protected
+router.post('/activity/add', authMiddleware, addFieldActivity);
 
-// GET   /api/farms/activities/:farmId
-router.get('/activities/:farmId', getFieldActivities);
+// GET   /api/farms/activities/:farmId — Protected
+router.get('/activities/:farmId', authMiddleware, getFieldActivities);
 
-// PATCH /api/farms/harvest/:id
-router.patch('/harvest/:id', harvestFarm);
+// PATCH /api/farms/harvest/:id — Protected
+router.patch('/harvest/:id', authMiddleware, harvestFarm);
 
-// GET   /api/farms/:userId  ← wildcard, must be AFTER all named routes
-router.get('/:userId', getFarms);
+// PATCH /api/farms/edit/:id — Protected (new: edit farm details)
+router.patch('/edit/:id', authMiddleware, updateFarm);
 
-// DELETE /api/farms/:id  ← wildcard
-router.delete('/:id', deleteFarm);
+// GET   /api/farms/:userId — Protected (wildcard must be AFTER named routes)
+router.get('/:userId', authMiddleware, getFarms);
+
+// DELETE /api/farms/:id — Protected
+router.delete('/:id', authMiddleware, deleteFarm);
 
 export default router;

@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { getCrop } from '../utils/cropConstants';
+import { X, Loader2, CheckCircle2 } from 'lucide-react';
+import { useTitle } from '../hooks/useTitle';
+import EmptyState from '../components/common/EmptyState';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Farm {
@@ -25,7 +29,16 @@ interface FieldActivity {
 }
 
 // ─── Crop Knowledge Base (agronomic schedules) ────────────────────────────────
+interface CropStage {
+  name: string;
+  start: number; // Day start
+  end: number;   // Day end
+  icon: string;
+}
+
 const CROP_SCHEDULE: Record<string, {
+  duration: number;
+  stages: CropStage[];
   irrigationDays: number;
   fertilizerDays: number;
   pesticideDays: number;
@@ -34,71 +47,120 @@ const CROP_SCHEDULE: Record<string, {
   pesticideTip: string;
 }> = {
   'Paddy (Rice)': {
+    duration: 120,
+    stages: [
+      { name: 'Nursery', start: 0, end: 25, icon: '🌱' },
+      { name: 'Vegetative', start: 25, end: 60, icon: '🌿' },
+      { name: 'Reproductive', start: 60, end: 95, icon: '🌾' },
+      { name: 'Ripening', start: 95, end: 120, icon: '🍚' },
+    ],
     irrigationDays: 4,
     fertilizerDays: 21,
     pesticideDays: 14,
-    irrigationTip: 'Maintain 2–5 cm standing water. Ensure field is flooded during tillering stage.',
-    fertilizerTip: 'Apply Urea (top-dress) in split doses. Avoid applying during waterlogging.',
-    pesticideTip: 'Monitor for stem borer and leaf folder. Spray Chlorpyrifos if infestation seen.',
+    irrigationTip: 'Maintain 2–5 cm standing water.',
+    fertilizerTip: 'Apply Urea in split doses.',
+    pesticideTip: 'Monitor for stem borer.',
   },
   'Cotton': {
+    duration: 150,
+    stages: [
+      { name: 'Seedling', start: 0, end: 35, icon: '🌱' },
+      { name: 'Squaring', start: 35, end: 70, icon: '🌸' },
+      { name: 'Boll Dev', start: 70, end: 120, icon: '🧶' },
+      { name: 'Maturing', start: 120, end: 150, icon: '🧺' },
+    ],
     irrigationDays: 10,
     fertilizerDays: 28,
     pesticideDays: 10,
-    irrigationTip: 'Irrigate every 10 days. Avoid waterlogging — cotton is highly sensitive.',
-    fertilizerTip: 'Apply DAP at sowing. Foliar spray of boron + potassium at boll stage.',
-    pesticideTip: 'Watch for bollworm and whitefly. Use YLT (Yellow sticky traps) as a monitor.',
+    irrigationTip: 'Irrigate every 10 days. Avoid waterlogging.',
+    fertilizerTip: 'Foliar spray of potassium at boll stage.',
+    pesticideTip: 'Watch for bollworm.',
   },
   'Chilli': {
+    duration: 150,
+    stages: [
+      { name: 'Planting', start: 0, end: 20, icon: '🌱' },
+      { name: 'Vegetative', start: 20, end: 50, icon: '🌿' },
+      { name: 'Flowering', start: 50, end: 85, icon: '🌼' },
+      { name: 'Fruiting', start: 85, end: 150, icon: '🌶️' },
+    ],
     irrigationDays: 7,
     fertilizerDays: 21,
     pesticideDays: 14,
-    irrigationTip: 'Irrigate once a week. Avoid splashing water on leaves to reduce fungal risk.',
-    fertilizerTip: 'Apply NPK 19:19:19 fortnightly via drip or foliar. Add calcium spray during fruiting.',
-    pesticideTip: 'Spray neem oil solution every 14 days. Watch for thrips and mites.',
+    irrigationTip: 'Irrigate once a week.',
+    fertilizerTip: 'Apply NPK 19:19:19 fortnightly.',
+    pesticideTip: 'Spray neem oil every 14 days.',
   },
   'Maize': {
+    duration: 110,
+    stages: [
+      { name: 'Emergence', start: 0, end: 20, icon: '🌱' },
+      { name: 'Growth', start: 20, end: 45, icon: '🌿' },
+      { name: 'Tasseling', start: 45, end: 75, icon: '🌽' },
+      { name: 'Grain Fill', start: 75, end: 110, icon: '🌽' },
+    ],
     irrigationDays: 8,
     fertilizerDays: 21,
     pesticideDays: 21,
-    irrigationTip: 'Critical irrigation at tasseling and grain fill stage. Avoid stress at knee-high stage.',
-    fertilizerTip: 'Top-dress urea at knee height (V6 stage). Apply Zinc sulphate if deficiency visible.',
-    pesticideTip: 'Monitor for Fall Armyworm. Apply Emamectin Benzoate in the whorl if larvae found.',
+    irrigationTip: 'Critical irrigation at tasseling.',
+    fertilizerTip: 'Top-dress urea at knee height.',
+    pesticideTip: 'Monitor for Fall Armyworm.',
   },
   'Tomato': {
+    duration: 100,
+    stages: [
+      { name: 'Planting', start: 0, end: 20, icon: '🌱' },
+      { name: 'Vegetative', start: 20, end: 45, icon: '🌿' },
+      { name: 'Flowering', start: 45, end: 70, icon: '🌼' },
+      { name: 'Harvesting', start: 70, end: 100, icon: '🍅' },
+    ],
     irrigationDays: 5,
     fertilizerDays: 14,
     pesticideDays: 10,
-    irrigationTip: 'Irrigate every 5–7 days using drip system. Avoid wetting foliage.',
-    fertilizerTip: 'Use coagulation fertigation (NPK + micronutrients) weekly via drip from flowering.',
-    pesticideTip: 'Apply Copper fungicide every 10 days to prevent early blight. Scout for TSWV.',
+    irrigationTip: 'Irrigate every 5–7 days.',
+    fertilizerTip: 'Fertigate weekly via drip from flowering.',
+    pesticideTip: 'Apply fungicide every 10 days.',
   },
   'Turmeric': {
-    irrigationDays: 7,
+    duration: 270,
+    stages: [
+      { name: 'Sprouting', start: 0, end: 45, icon: '🌱' },
+      { name: 'Tillering', start: 45, end: 120, icon: '🌿' },
+      { name: 'Formation', start: 120, end: 210, icon: '🟡' },
+      { name: 'Maturation', start: 210, end: 270, icon: '🥗' },
+    ],
+    irrigationDays: 10,
     fertilizerDays: 30,
-    pesticideDays: 30,
-    irrigationTip: 'Irrigate at 7-day intervals. Mulch with paddy straw to retain moisture.',
-    fertilizerTip: 'Apply FYM (Farm Yard Manure) at planting. Top-dress with Urea at 60 and 120 days.',
-    pesticideTip: 'Drench with Trichoderma + Pseudomonas every 30 days for rhizome rot prevention.',
+    pesticideDays: 21,
+    irrigationTip: 'Irrigate every 10 days.',
+    fertilizerTip: 'Top-dress with Urea + Potash.',
+    pesticideTip: 'Watch for Leaf Blotch.',
   },
 };
 
 const DEFAULT_SCHEDULE = {
+  duration: 120,
+  stages: [
+    { name: 'Growth', start: 0, end: 30, icon: '🌱' },
+    { name: 'Developing', start: 30, end: 60, icon: '🌿' },
+    { name: 'Producing', start: 60, end: 90, icon: '🌾' },
+    { name: 'Harvest', start: 90, end: 120, icon: '🧺' },
+  ],
   irrigationDays: 7,
   fertilizerDays: 21,
   pesticideDays: 14,
-  irrigationTip: 'Irrigate based on soil moisture. Avoid overwatering.',
-  fertilizerTip: 'Apply balanced NPK fertilizer. Follow soil test recommendations.',
-  pesticideTip: 'Inspect fields weekly. Use Integrated Pest Management (IPM) practices.',
+  irrigationTip: 'Irrigate based on soil moisture.',
+  fertilizerTip: 'Apply balanced NPK fertilizer.',
+  pesticideTip: 'Inspect fields weekly.',
 };
 
 // ─── Activity Config ──────────────────────────────────────────────────────────
 const ACTIVITY_TYPES = [
-  { value: 'Irrigation',  label: 'Irrigation',   icon: <img src="/icons/weather.png" className="w-5 h-5 object-contain" />,    color: 'bg-blue-500',   light: 'bg-blue-50 border-blue-200 text-blue-700',   dot: 'bg-blue-500' },
-  { value: 'Fertilizer',  label: 'Fertilizer',   icon: <img src="/icons/shops.png" className="w-5 h-5 object-contain" />,      color: 'bg-green-500',  light: 'bg-green-50 border-green-200 text-green-700', dot: 'bg-green-500' },
-  { value: 'Pesticide',   label: 'Pesticide',    icon: <img src="/icons/disease.png" className="w-5 h-5 object-contain" />,    color: 'bg-red-500',    light: 'bg-red-50 border-red-200 text-red-700',       dot: 'bg-red-500' },
-  { value: 'Weeding',     label: 'Weeding',      icon: <span className="text-sm">🍃</span>,                                    color: 'bg-lime-500',   light: 'bg-lime-50 border-lime-200 text-lime-700',    dot: 'bg-lime-500' },
-  { value: 'Other',       label: 'Other',        icon: <span className="text-sm">📝</span>,                                    color: 'bg-gray-500',   light: 'bg-gray-50 border-gray-200 text-gray-700',    dot: 'bg-gray-500' },
+  { value: 'Irrigation',  label: 'Watering',     icon: '💧', color: 'bg-blue-100/50 text-blue-700 border-blue-200' },
+  { value: 'Fertilizer',  label: 'Fertilizer',   icon: '🧪', color: 'bg-green-100/50 text-green-700 border-green-200' },
+  { value: 'Pesticide',   label: 'Spray',        icon: '🐛', color: 'bg-red-100/50 text-red-700 border-red-200' },
+  { value: 'Weeding',     label: 'Weeding',      icon: '🍃', color: 'bg-lime-100/50 text-lime-700 border-lime-200' },
+  { value: 'Other',       label: 'Other',        icon: '📝', color: 'bg-slate-100 text-slate-700 border-slate-200' },
 ];
 
 const getActivityConfig = (type: string) =>
@@ -106,6 +168,7 @@ const getActivityConfig = (type: string) =>
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const daysSince = (dateStr: string) => {
+  if (!dateStr) return 0;
   const diff = Date.now() - new Date(dateStr).getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 };
@@ -119,15 +182,18 @@ const daysUntil = (daysInterval: number, lastDateStr?: string) => {
 };
 
 const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const CropTimeline = () => {
+  useTitle('Field Console');
+  const navigate = useNavigate();
   const [farms, setFarms] = useState<Farm[]>([]);
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'log' | 'progress' | 'tasks'>('log');
 
   const [form, setForm] = useState({
     type: 'Irrigation',
@@ -149,7 +215,7 @@ const CropTimeline = () => {
     setLoading(true);
     try {
       const res = await apiService.farms.getAll();
-      const data: Farm[] = Array.isArray(res.data) ? res.data : res.data.data || [];
+      const data: Farm[] = res.data.farms || [];
       setFarms(data);
       if (data.length > 0 && !selectedFarm) {
         setSelectedFarm(data[0]);
@@ -190,469 +256,349 @@ const CropTimeline = () => {
     }
   };
 
+  const getLifecycleStats = (farm: Farm) => {
+    const schedule = CROP_SCHEDULE[farm.cropName] || DEFAULT_SCHEDULE;
+    const daysPassed = daysSince(farm.startDate);
+    const progress = Math.min(100, Math.max(0, (daysPassed / schedule.duration) * 100));
+    const currentStageIndex = schedule.stages.findIndex(s => daysPassed >= s.start && daysPassed < s.end);
+    const resolvedIndex = currentStageIndex === -1 ? (daysPassed >= schedule.duration ? schedule.stages.length - 1 : 0) : currentStageIndex;
+    
+    return {
+      daysPassed,
+      remaining: Math.max(0, schedule.duration - daysPassed),
+      progress,
+      currentStageIndex: resolvedIndex,
+      stages: schedule.stages,
+      duration: schedule.duration
+    };
+  };
+
   const buildTimeline = (farm: Farm) => {
     const events: any[] = [];
+    events.push({ id: 'sow', label: 'Cycle Started', type: 'Sowing', detail: 'Sowing complete', date: farm.startDate, icon: '🌱', color: 'bg-emerald-50 text-emerald-700 border-emerald-100' });
 
-    events.push({
-      id: 'sow-' + farm.id,
-      type: 'Sowing',
-      label: 'Crop Sown',
-      detail: `${farm.cropName} — ${farm.fieldSizeAcres} Acres`,
-      date: farm.startDate,
-      icon: <span className="text-sm">🌱</span>,
-      badgeClass: 'bg-amber-500',
-      cardClass: 'bg-amber-50 border-amber-200',
-      textClass: 'text-amber-800',
-    });
-
-    (farm.activities || []).forEach(activity => {
-      const cfg = getActivityConfig(activity.type);
-      events.push({
-        id: activity.id,
-        type: activity.type,
-        label: activity.type,
-        detail: activity.productName
-          ? `${activity.productName}${activity.quantity ? ` — ${activity.quantity} ${activity.unit}` : ''}`
-          : activity.quantity ? `${activity.quantity} ${activity.unit}` : '',
-        date: activity.appliedDate,
-        icon: cfg.icon,
-        badgeClass: cfg.color,
-        cardClass: `${cfg.light}`,
-        textClass: cfg.light.split(' ')[2] || 'text-gray-700',
-      });
-    });
-
-    (farm.expenses || []).forEach(expense => {
-      events.push({
-        id: 'exp-' + expense.id,
-        type: 'Expense',
-        label: `Expense: ${expense.category}`,
-        detail: `₹${Number(expense.amount).toLocaleString()}${expense.note ? ' — ' + expense.note : ''}`,
-        date: expense.date,
-        icon: <span className="text-sm">💰</span>,
-        badgeClass: 'bg-gray-400',
-        cardClass: 'bg-gray-50 border-gray-200',
-        textClass: 'text-gray-700',
-        isExpense: true,
-      });
+    (farm.activities || []).forEach(act => {
+      const cfg = getActivityConfig(act.type);
+      events.push({ id: act.id, label: act.type, type: act.type, detail: act.productName || act.type, date: act.appliedDate, icon: cfg.icon, color: cfg.color });
     });
 
     if (farm.status === 'HARVESTED' && farm.endDate) {
-      events.push({
-        id: 'harvest-' + farm.id,
-        type: 'Harvest',
-        label: 'Crop Harvested',
-        detail: `${farm.cropName} — Cycle Complete`,
-        date: farm.endDate,
-        icon: <span className="text-sm">✅</span>,
-        badgeClass: 'bg-emerald-600',
-        cardClass: 'bg-emerald-50 border-emerald-200',
-        textClass: 'text-emerald-800',
-      });
+      events.push({ id: 'hv', label: 'Harvested', type: 'Harvest', detail: 'Crop cycle end', date: farm.endDate, icon: '📦', color: 'bg-blue-50 text-blue-700 border-blue-100' });
     }
 
     return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
-  const buildRecommendations = (farm: Farm) => {
-    const schedule = CROP_SCHEDULE[farm.cropName] || DEFAULT_SCHEDULE;
-    const activities = farm.activities || [];
+  const recommendations = selectedFarm ? [
+    { label: 'Watering', due: daysUntil((CROP_SCHEDULE[selectedFarm.cropName] || DEFAULT_SCHEDULE).irrigationDays, selectedFarm.activities?.find(a => a.type === 'Irrigation')?.appliedDate || selectedFarm.startDate), icon: '💧' },
+    { label: 'Fertilizer', due: daysUntil((CROP_SCHEDULE[selectedFarm.cropName] || DEFAULT_SCHEDULE).fertilizerDays, selectedFarm.activities?.find(a => a.type === 'Fertilizer')?.appliedDate || selectedFarm.startDate), icon: '🧪' },
+    { label: 'Protection', due: daysUntil((CROP_SCHEDULE[selectedFarm.cropName] || DEFAULT_SCHEDULE).pesticideDays, selectedFarm.activities?.find(a => a.type === 'Pesticide')?.appliedDate || selectedFarm.startDate), icon: '🛡️' },
+  ] : [];
 
-    const lastIrrigation = activities.find(a => a.type === 'Irrigation')?.appliedDate;
-    const lastFertilizer = activities.find(a => a.type === 'Fertilizer')?.appliedDate;
-    const lastPesticide  = activities.find(a => a.type === 'Pesticide')?.appliedDate;
-
-    const irrigDue  = daysUntil(schedule.irrigationDays, lastIrrigation || farm.startDate);
-    const fertDue   = daysUntil(schedule.fertilizerDays, lastFertilizer || farm.startDate);
-    const pestDue   = daysUntil(schedule.pesticideDays,  lastPesticide  || farm.startDate);
-
-    return [
-      {
-        key: 'irrigation',
-        label: 'Next Irrigation',
-        daysLeft: irrigDue,
-        icon: <span className="text-sm">💧</span>,
-        tip: schedule.irrigationTip,
-        color: 'blue',
-        lastDone: lastIrrigation,
-        frequency: `Every ${schedule.irrigationDays} days`,
-      },
-      {
-        key: 'fertilizer',
-        label: 'Fertilizer Application',
-        daysLeft: fertDue,
-        icon: <span className="text-sm">🧪</span>,
-        tip: schedule.fertilizerTip,
-        color: 'green',
-        lastDone: lastFertilizer,
-        frequency: `Every ${schedule.fertilizerDays} days`,
-      },
-      {
-        key: 'pesticide',
-        label: 'Pesticide / Neem Spray',
-        daysLeft: pestDue,
-        icon: <span className="text-sm">🐛</span>,
-        tip: schedule.pesticideTip,
-        color: 'red',
-        lastDone: lastPesticide,
-        frequency: `Every ${schedule.pesticideDays} days`,
-      },
-    ];
-  };
-
+  const lifecyle = selectedFarm ? getLifecycleStats(selectedFarm) : null;
   const timeline = selectedFarm ? buildTimeline(selectedFarm) : [];
-  const recommendations = selectedFarm && selectedFarm.status === 'ACTIVE'
-    ? buildRecommendations(selectedFarm)
-    : [];
 
-  const colorMap: Record<string, { bg: string; text: string; border: string; badge: string; overdue: string; soon: string; ok: string }> = {
-    blue:  { bg: 'bg-blue-50',  text: 'text-blue-700',  border: 'border-blue-200',  badge: 'bg-blue-500',  overdue: 'bg-red-100 text-red-700 border-red-200', soon: 'bg-amber-100 text-amber-700 border-amber-200', ok: 'bg-green-100 text-green-700 border-green-200' },
-    green: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', badge: 'bg-green-500', overdue: 'bg-red-100 text-red-700 border-red-200', soon: 'bg-amber-100 text-amber-700 border-amber-200', ok: 'bg-green-100 text-green-700 border-green-200' },
-    red:   { bg: 'bg-rose-50',  text: 'text-rose-700',  border: 'border-rose-200',  badge: 'bg-rose-500',  overdue: 'bg-red-100 text-red-700 border-red-200', soon: 'bg-amber-100 text-amber-700 border-amber-200', ok: 'bg-green-100 text-green-700 border-green-200' },
-  };
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
+      <Loader2 className="animate-spin text-emerald-600 mb-4" size={48} />
+      <p className="text-slate-500 font-bold tracking-widest uppercase text-xs">Accessing Cloud Farm Data...</p>
+    </div>
+  );
+
+  if (farms.length === 0) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
+       <EmptyState 
+         title="No Cloud Data Found"
+         description="You haven't registered any active field operations. Add your first crop in 'My Farm' to enable the console."
+         actionLabel="Add First Crop"
+         actionLink="/farm-profile"
+       />
+    </div>
+  );
 
   return (
-    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
-
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 border border-blue-200 rounded-xl flex items-center justify-center">
-                <span className="text-xl">📅</span>
-              </div>
-              Crop Timeline
-            </h1>
-            <p className="text-gray-500 text-sm mt-1 ml-13">Track field activities and get smart care recommendations</p>
-          </div>
-          {selectedFarm && selectedFarm.status === 'ACTIVE' && (
-            <button
-              id="add-activity-btn"
-              onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md shadow-blue-200 transition-all active:scale-95"
-            >
-              <span className="text-sm">➕</span> Log Activity
-            </button>
-          )}
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      
+      {/* ── SIDEBAR CONSOLE ── */}
+      <div className="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col h-auto md:h-screen md:sticky md:top-0">
+        <div className="p-6 border-b border-slate-100">
+           <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Active Field Units</h2>
+           <div className="space-y-2">
+             {farms.map(farm => {
+               const isActive = selectedFarm?.id === farm.id;
+               const crop = getCrop(farm.cropName);
+               return (
+                 <button 
+                   key={farm.id} 
+                   onClick={() => setSelectedFarm(farm)}
+                   className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all border ${
+                     isActive ? 'bg-emerald-50 border-emerald-100 shadow-sm' : 'bg-white border-transparent hover:bg-slate-50'
+                   }`}
+                 >
+                   <span className="text-2xl">{crop.emoji}</span>
+                   <div className="text-left">
+                     <p className={`font-bold text-sm ${isActive ? 'text-emerald-900' : 'text-slate-700'}`}>{farm.cropName}</p>
+                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">{farm.fieldSizeAcres} Acres • {farm.status}</p>
+                   </div>
+                 </button>
+               );
+             })}
+           </div>
+        </div>
+        <div className="mt-auto p-6 bg-slate-50/50">
+           <button onClick={() => navigate('/farm-profile')} className="flex items-center gap-2 text-slate-500 font-bold hover:text-emerald-600 transition text-sm">
+             <span>➕</span> Add New Field Record
+           </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-24 text-gray-400 font-medium">
-          <div className="text-4xl mb-3 animate-pulse">🌱</div>
-          <p>Loading your crop data...</p>
-        </div>
-      ) : farms.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 shadow-sm">
-          <span className="text-5xl block mb-4">🌱</span>
-          <p className="text-gray-500 font-semibold text-lg">No crops found.</p>
-          <p className="text-gray-400 text-sm mt-1">Go to <strong>My Farm</strong> and add a crop first.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col xl:flex-row gap-6">
-
-          <div className="xl:w-80 flex-shrink-0 space-y-4">
-
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Select Crop</h2>
-              <div className="space-y-2">
-                {farms.map(farm => {
-                  const crop = getCrop(farm.cropName);
-                  const isActive = selectedFarm?.id === farm.id;
-                  const isHarvested = farm.status === 'HARVESTED';
-                  return (
-                    <button
-                      key={farm.id}
-                      onClick={() => setSelectedFarm(farm)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                        isActive
-                          ? `${crop.border} ${crop.bg} shadow-sm`
-                          : 'border-gray-100 bg-white hover:border-gray-200'
-                      } ${isHarvested ? 'opacity-60' : ''}`}
-                    >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isHarvested ? 'bg-gray-100' : crop.bg}`}>
-                        {crop.img
-                          ? <img src={crop.img} alt={farm.cropName} className={`w-full h-full object-cover rounded-lg ${isHarvested ? 'grayscale opacity-70' : ''}`} />
-                          : <span className="text-xl">{crop.emoji}</span>
-                        }
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-bold text-sm truncate ${isActive ? crop.text : 'text-gray-700'}`}>{farm.cropName}</p>
-                        <p className="text-xs text-gray-400">{farm.fieldSizeAcres} Acres • {isHarvested ? '✅ Harvested' : '🟢 Active'}</p>
-                      </div>
-                      {isActive && <span className="text-sm">▶️</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {recommendations.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <span className="text-sm">💡</span> Smart Recommendations
-                </h2>
-                <div className="space-y-3">
-                  {recommendations.map(rec => {
-                    const c = colorMap[rec.color];
-                    const isOverdue = rec.daysLeft !== null && rec.daysLeft < 0;
-                    const isSoon    = rec.daysLeft !== null && rec.daysLeft >= 0 && rec.daysLeft <= 3;
-                    const statusClass = isOverdue ? c.overdue : isSoon ? c.soon : c.ok;
-
-                    return (
-                      <div key={rec.key} className={`p-3 rounded-xl border ${c.bg} ${c.border}`}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${c.badge} text-white flex-shrink-0`}>
-                              {rec.icon}
-                            </div>
-                            <div>
-                              <p className={`text-xs font-bold ${c.text}`}>{rec.label}</p>
-                              <p className="text-[10px] text-gray-400 mt-0.5">{rec.frequency}</p>
-                            </div>
-                          </div>
-                          {rec.daysLeft !== null && (
-                            <span className={`text-[10px] font-black px-2 py-1 rounded-full border ${statusClass} flex-shrink-0`}>
-                              {isOverdue
-                                ? `${Math.abs(rec.daysLeft)}d overdue`
-                                : rec.daysLeft === 0
-                                ? 'Due today'
-                                : `${rec.daysLeft}d left`
-                              }
-                            </span>
-                          )}
-                        </div>
-
-                        {rec.lastDone && (
-                          <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
-                            <span className="text-[10px]">🕒</span> Last: {formatDate(rec.lastDone)}
-                          </p>
-                        )}
-
-                        {(isOverdue || isSoon) && (
-                          <div className={`mt-2 flex items-start gap-1.5 p-2 rounded-lg ${isOverdue ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}>
-                            <span className="text-[10px]">⚠️</span>
-                            <p className={`text-[10px] leading-relaxed ${isOverdue ? 'text-red-600' : 'text-amber-700'}`}>
-                              {rec.tip}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {selectedFarm && selectedFarm.status === 'HARVESTED' && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-sm text-emerald-700">
-                <p className="font-bold flex items-center gap-2 mb-1"><span className="text-sm">✅</span> Harvest Complete</p>
-                <p className="text-xs text-emerald-600">This crop has been harvested. View the full activity history in the timeline →</p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1">
-            {selectedFarm ? (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-extrabold text-gray-800">
-                      {selectedFarm.cropName} Timeline
-                    </h2>
-                    <p className="text-sm text-gray-400 mt-0.5">
-                      {timeline.length} events • Sown {formatDate(selectedFarm.startDate)}
-                    </p>
-                  </div>
-
-                  <div className="hidden md:flex flex-wrap gap-2">
-                    {ACTIVITY_TYPES.slice(0, 3).map(a => (
-                      <span key={a.value} className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full border ${a.light}`}>
-                        {a.icon} {a.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {timeline.length === 1 ? (
-                  <div className="text-center py-12 border-2 border-dashed border-blue-100 rounded-xl">
-                    <span className="text-5xl block mb-3">📅</span>
-                    <p className="text-gray-500 font-semibold">No field activities logged yet.</p>
-                    <p className="text-gray-400 text-sm mt-1">Click <strong>Log Activity</strong> to record your first irrigation, fertilizer, or pesticide event.</p>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-100" />
-
-                    <div className="space-y-4 pl-12">
-                      {timeline.map((event, idx) => (
-                        <div key={event.id} className="relative">
-                          <div className={`absolute -left-[2.4rem] top-3 w-4 h-4 rounded-full ${event.badgeClass} flex items-center justify-center shadow-sm border-2 border-white`}>
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          </div>
-
-                          <div className={`p-4 rounded-xl border ${event.cardClass} transition-all hover:shadow-md`}>
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-2 flex-1">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${event.badgeClass} text-white flex-shrink-0`}>
-                                  {event.icon}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className={`font-bold text-sm ${event.textClass}`}>{event.label}</p>
-                                  {event.detail && (
-                                    <p className="text-xs text-gray-500 mt-0.5 truncate">{event.detail}</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="text-right flex-shrink-0">
-                                <p className="text-xs font-semibold text-gray-500">{formatDate(event.date)}</p>
-                                <p className="text-[10px] text-gray-400 mt-0.5">
-                                  {daysSince(event.date) === 0
-                                    ? 'Today'
-                                    : `${daysSince(event.date)} days ago`}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {idx < timeline.length - 1 && (
-                            <div className="absolute -left-[2.2rem] top-6 bottom-0 w-0.5 bg-gray-100" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm text-gray-400">
-                <span className="text-5xl block mb-4">📅</span>
-                <p>Select a crop on the left to view its timeline</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="text-lg font-extrabold text-gray-800">Log Field Activity</h3>
-              <button
-                id="close-modal-btn"
-                onClick={() => setShowModal(false)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition"
-              >
-                <span className="text-lg">❌</span>
+      {/* ── MAIN WORKSPACE ── */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* Header Toolbar */}
+        <header className="bg-white border-b border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-40">
+           <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center text-xl shadow-lg shadow-slate-200">📊</div>
+             <div>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">{selectedFarm?.cropName} <span className="text-slate-400 ml-2">Console</span></h1>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Established {formatDate(selectedFarm?.startDate || "")}
+                </p>
+             </div>
+           </div>
+           
+           <div className="flex items-center gap-3">
+              <button className="hidden lg:flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition">
+                 <span>📩</span> Export PDF Report
               </button>
-            </div>
+              <button 
+                onClick={() => setShowModal(true)}
+                className="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition transform active:scale-95"
+              >
+                Log Field Activity
+              </button>
+           </div>
+        </header>
 
-            <form id="add-activity-form" onSubmit={handleAddActivity} className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-2">Activity Type *</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {ACTIVITY_TYPES.map(a => (
-                    <button
-                      key={a.value}
-                      type="button"
-                      onClick={() => setForm({ ...form, type: a.value })}
-                      className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 text-xs font-bold transition-all ${
-                        form.type === a.value
-                          ? `${a.light} border-current shadow-sm scale-105`
-                          : 'border-gray-100 text-gray-500 hover:border-gray-200'
-                      }`}
-                    >
-                      {a.icon}
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
+        <div className="p-6 space-y-6">
+           
+           {/* Industrial Growth Stepper */}
+           <div className="bg-white rounded-2xl border border-slate-200 p-8">
+              <div className="flex justify-between items-center mb-10">
+                 <div>
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Growth Metrics</h3>
+                    <p className="text-3xl font-black text-slate-900 tracking-tight">Day {lifecyle?.daysPassed} <span className="text-slate-300">/ {lifecyle?.duration}</span></p>
+                 </div>
+                 <div className="text-right">
+                    <p className="text-3xl font-black text-emerald-600">{lifecyle?.progress.toFixed(0)}% <span className="text-xs text-slate-400 font-bold uppercase ml-1">Cycle Complete</span></p>
+                 </div>
               </div>
 
-              {/* Product name */}
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">
-                  Product / Chemical Name
-                  <span className="font-normal text-gray-400 ml-1">(optional)</span>
-                </label>
-                <input
-                  id="product-name-input"
-                  type="text"
-                  placeholder={form.type === 'Irrigation' ? 'e.g. Canal, Drip, Borewell' : 'e.g. Urea, DAP, Neem Oil'}
-                  value={form.productName}
-                  onChange={e => setForm({ ...form, productName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 font-medium transition"
-                />
+              {/* Modern Linear Stepper */}
+              <div className="relative pt-4 pb-8">
+                 <div className="absolute top-1/2 left-0 w-full h-1.5 bg-slate-100 -translate-y-1/2 rounded-full" />
+                 <div 
+                   className="absolute top-1/2 left-0 h-1.5 bg-emerald-600 -translate-y-1/2 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(5,150,105,0.4)]"
+                   style={{ width: `${lifecyle?.progress}%` }}
+                 />
+                 
+                 <div className="flex justify-between relative z-10">
+                    {lifecyle?.stages.map((stage, idx) => {
+                      const isPast = idx < lifecyle.currentStageIndex;
+                      const isCurrent = idx === lifecyle.currentStageIndex;
+                      return (
+                        <div key={idx} className="flex flex-col items-center">
+                           <div className={`w-10 h-10 rounded-full border-4 flex items-center justify-center text-sm transition-all duration-500 ${
+                             isPast ? 'bg-emerald-600 border-emerald-50 text-white' : 
+                             isCurrent ? 'bg-white border-emerald-600 shadow-xl scale-110' : 
+                             'bg-slate-50 border-white text-slate-300'
+                           }`}>
+                             {stage.icon}
+                           </div>
+                           <p className={`mt-4 text-[10px] font-black uppercase tracking-widest ${isCurrent ? 'text-emerald-900 underline' : 'text-slate-400'}`}>{stage.name}</p>
+                        </div>
+                      );
+                    })}
+                 </div>
+              </div>
+           </div>
+
+           {/* Tabbed Interface */}
+           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col flex-1">
+              
+              {/* Tab Switcher */}
+              <div className="flex border-b border-slate-100 bg-slate-50/50">
+                 {(['log', 'progress', 'tasks'] as const).map(tab => (
+                   <button 
+                    key={tab} 
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-8 py-5 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${
+                      activeTab === tab ? 'bg-white border-emerald-600 text-emerald-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                   >
+                     {tab === 'log' ? '🖥️ System Log' : tab === 'progress' ? '📈 Stage Analysis' : '📋 Task Queue'}
+                   </button>
+                 ))}
               </div>
 
-              {/* Quantity + Unit */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">Quantity</label>
-                  <input
-                    id="quantity-input"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    placeholder="e.g. 50"
-                    value={form.quantity}
-                    onChange={e => setForm({ ...form, quantity: e.target.value })}
-                    className="w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">Unit</label>
-                  <select
-                    id="unit-select"
-                    value={form.unit}
-                    onChange={e => setForm({ ...form, unit: e.target.value })}
-                    className="w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 bg-white transition"
-                  >
-                    <option value="L">Liters (L)</option>
-                    <option value="mL">mL</option>
-                    <option value="kg">Kilograms (kg)</option>
-                    <option value="g">Grams (g)</option>
-                    <option value="bags">Bags</option>
-                    <option value="hours">Hours</option>
-                    <option value="acres">Acres covered</option>
-                  </select>
-                </div>
+              <div className="p-8">
+                 {activeTab === 'log' && (
+                   <div className="space-y-2">
+                     {timeline.length === 1 ? (
+                       <div className="text-center py-20 text-slate-300">
+                          <p className="font-bold text-sm italic">Initialize device activity to populate log...</p>
+                       </div>
+                     ) : (
+                       <div className="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-50">
+                         {timeline.map((event) => (
+                           <div key={event.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition group">
+                              <div className="flex items-center gap-4">
+                                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${event.color}`}>
+                                    {event.icon}
+                                 </div>
+                                 <div>
+                                    <p className="font-bold text-slate-800 text-sm">[{event.label}] <span className="font-medium text-slate-400 ml-2">{event.detail}</span></p>
+                                    <p className="text-[10px] text-slate-400 font-medium mt-0.5 tracking-tighter">TIMESTAMP_ISO: {new Date(event.date).toISOString()}</p>
+                                 </div>
+                              </div>
+                              <span className="text-[10px] font-black text-slate-300 opacity-0 group-hover:opacity-100 transition whitespace-nowrap">STATUS: RECORDED</span>
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 )}
+
+                 {activeTab === 'tasks' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       {recommendations.map((rec, i) => {
+                         const isDue = rec.due !== null && rec.due <= 0;
+                         return (
+                           <div key={i} className={`p-6 rounded-2xl border ${isDue ? 'border-red-100 bg-red-50/30' : 'border-slate-100 bg-slate-50/30'} flex flex-col justify-between`}>
+                              <div className="flex justify-between items-start mb-6">
+                                 <span className="text-4xl">{rec.icon}</span>
+                                 <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${
+                                   isDue ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
+                                 }`}>
+                                   {isDue ? 'Priority: High' : 'Status: Nominal'}
+                                 </span>
+                              </div>
+                              <div>
+                                 <h4 className="text-lg font-black text-slate-900">{rec.label}</h4>
+                                 <p className={`text-xs font-bold mt-1 ${isDue ? 'text-red-600' : 'text-slate-500'}`}>
+                                    {isDue ? 'Action needed immediately' : `Scheduled in ${rec.due} days`}
+                                 </p>
+                              </div>
+                              <button onClick={() => setShowModal(true)} className="mt-8 text-[10px] font-black text-emerald-600 uppercase hover:underline">
+                                 Commit Task →
+                              </button>
+                           </div>
+                         );
+                       })}
+                    </div>
+                 )}
+
+                 {activeTab === 'progress' && (
+                   <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div className="p-6 bg-slate-900 rounded-2xl text-white">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Current Stage Details</h4>
+                            <div className="space-y-4">
+                               <div className="flex justify-between border-b border-slate-800 pb-2">
+                                  <span className="text-slate-500 text-xs font-bold">STAGE_NAME</span>
+                                  <span className="font-black text-emerald-400">{lifecyle?.stages[lifecyle.currentStageIndex]?.name}</span>
+                               </div>
+                               <div className="flex justify-between border-b border-slate-800 pb-2">
+                                  <span className="text-slate-500 text-xs font-bold">DAYS_ACCUMULATED</span>
+                                  <span className="font-black">{lifecyle?.daysPassed}d</span>
+                               </div>
+                               <div className="flex justify-between">
+                                  <span className="text-slate-500 text-xs font-bold">DAYS_REMAINING</span>
+                                  <span className="font-black text-blue-400">{lifecyle?.remaining}d</span>
+                               </div>
+                            </div>
+                         </div>
+                         <div className="p-6 bg-emerald-700 rounded-2xl text-white shadow-xl shadow-emerald-100">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-200 mb-6">Environmental Signal</h4>
+                            <div className="flex items-center gap-6">
+                               <span className="text-6xl">⛅</span>
+                               <div>
+                                  <p className="font-black text-xl leading-snug tracking-tighter">Safe for Spraying & Application</p>
+                                  <p className="text-xs text-emerald-100 font-medium mt-1">Wind speed and humidity levels are within industrial safety thresholds.</p>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                 )}
+              </div>
+           </div>
+        </div>
+      </div>
+
+      {/* Industrial Activity Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => !saving && setShowModal(false)} />
+           <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-200 border border-slate-200">
+              <div className="flex justify-between items-center mb-8">
+                 <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                   <span className="w-8 h-8 bg-slate-900 text-white rounded flex items-center justify-center text-sm">📅</span>
+                   Log Field Operation
+                 </h1>
+                 <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 transition"><X size={24} /></button>
               </div>
 
-              {/* Date */}
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">Date Applied *</label>
-                <input
-                  id="applied-date-input"
-                  type="date"
-                  required
-                  value={form.appliedDate}
-                  onChange={e => setForm({ ...form, appliedDate: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 transition"
-                />
-              </div>
+              <form onSubmit={handleAddActivity} className="space-y-6">
+                 <div className="grid grid-cols-2 gap-3">
+                   {ACTIVITY_TYPES.map(a => (
+                      <button 
+                        key={a.value} 
+                        type="button" 
+                        onClick={() => setForm({...form, type: a.value})}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          form.type === a.value ? 'bg-emerald-50 border-emerald-600' : 'border-slate-50 hover:border-slate-200'
+                        }`}
+                      >
+                         <span className="text-2xl block mb-2">{a.icon}</span>
+                         <span className={`text-[10px] font-black uppercase tracking-widest ${form.type === a.value ? 'text-emerald-700' : 'text-slate-400'}`}>
+                           {a.label}
+                         </span>
+                      </button>
+                   ))}
+                 </div>
 
-              <div className="flex gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-bold hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  id="save-activity-btn"
-                  type="submit"
+                 <div className="space-y-4">
+                    <div>
+                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Item/Product Description</label>
+                       <input 
+                         type="text" 
+                         className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition-all"
+                         placeholder="e.g. 50kg Urea N46%"
+                         value={form.productName}
+                         onChange={e => setForm({...form, productName: e.target.value})}
+                       />
+                    </div>
+                    <div>
+                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Date of Operation</label>
+                       <input 
+                         type="date" 
+                         className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition-all uppercase"
+                         value={form.appliedDate}
+                         onChange={e => setForm({...form, appliedDate: e.target.value})}
+                       />
+                    </div>
+                 </div>
+
+                 <button 
+                  type="submit" 
                   disabled={saving}
-                  className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-200 transition-all active:scale-95 disabled:bg-gray-300"
-                >
-                  {saving ? 'Saving...' : '✅ Save Activity'}
-                </button>
-              </div>
-            </form>
-          </div>
+                  className="w-full bg-slate-900 text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                 >
+                   {saving ? <Loader2 className="animate-spin text-emerald-400" /> : <CheckCircle2 size={16} />} commit record
+                 </button>
+              </form>
+           </div>
         </div>
       )}
     </div>

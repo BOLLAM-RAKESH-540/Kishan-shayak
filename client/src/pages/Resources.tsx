@@ -74,20 +74,37 @@ const Resources = () => {
   return (
     <div className="p-8 bg-white/85 backdrop-blur-sm min-h-screen">
       
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-            <Store className="text-purple-600" size={32} /> Agri-Shops & Resources
-          </h1>
-          <p className="text-gray-500 text-sm">Find verified seeds, fertilizers, and government centers</p>
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-purple-100 overflow-hidden mb-8">
+        <div className="md:flex">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
+             <img 
+               src="/images/modules/resources.png" 
+               alt="Agri-Resources Hub" 
+               className="w-full h-full object-cover"
+             />
+             <div className="absolute inset-0 bg-purple-900/10"></div>
+          </div>
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Agri-Resource Hub
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Verified Seeds, Fertilizers & Centers</p>
+                </div>
+                <button 
+                  onClick={() => setShowForm(!showForm)} 
+                  className="bg-purple-600 text-white px-6 py-3 rounded-2xl font-black shadow-xl hover:scale-105 transition transform flex items-center gap-2"
+                >
+                  <Plus size={20} /> Register Shop
+                </button>
+             </div>
+             <p className="text-sm text-gray-600 max-w-xl font-medium leading-relaxed">
+               Find nearby private dealers and government distribution centers. Access verified products with full licensing transparency.
+             </p>
+          </div>
         </div>
-        <button 
-          onClick={() => setShowForm(!showForm)} 
-          className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition font-medium shadow-sm"
-        >
-          <Plus size={20} /> Register Shop
-        </button>
       </div>
 
       {/* 🔍 Search Bar */}

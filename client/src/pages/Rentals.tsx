@@ -3,7 +3,6 @@ import {
   Phone, 
   MapPin, 
   Search, 
-  Plus, 
   X, 
   Tractor, 
   Truck, 
@@ -13,13 +12,16 @@ import {
   CheckCircle,
   Zap,
   Tag,
-  ShieldCheck,
   TrendingUp
 } from 'lucide-react';
 import { apiService } from '../services/api';
+import toast from 'react-hot-toast';
+import EmptyState from '../components/common/EmptyState';
+import { Loader2 } from 'lucide-react';
 
 const Rentals = () => {
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   
@@ -72,10 +74,13 @@ const Rentals = () => {
 
   const fetchRentals = async () => {
     try {
+      setLoading(true);
       const res = await apiService.rentals.getAll();
       setVehicles(res.data);
     } catch (error) {
       console.error("Error fetching rentals", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,16 +88,24 @@ const Rentals = () => {
     fetchRentals();
   }, []);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-red-600" size={64} />
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await apiService.rentals.create(formData);
-      alert("Machinery Listed Successfully in Bazaar! 🚜");
+      toast.success("Machinery Listed Successfully in Bazaar! 🚜");
       setShowForm(false);
       setFormData({ vehicleName: '', type: 'Tractor', pricePerHour: '', location: '', contactPhone: '' });
       fetchRentals();
     } catch (error) {
-      alert("Failed to list in Bazaar.");
+      toast.error("Failed to list in Bazaar.");
     }
   };
 
@@ -102,7 +115,7 @@ const Rentals = () => {
       await apiService.rentals.delete(id.toString());
       setVehicles(vehicles.filter(v => v.id !== id));
     } catch (error) {
-      alert("Failed to delete.");
+      toast.error("Failed to delete.");
     }
   };
 
@@ -113,39 +126,38 @@ const Rentals = () => {
   return (
     <div className="p-4 sm:p-8 bg-gray-50 min-h-screen font-sans">
       
-      {/* 🚜 INDIAN MACHINERY BAZAAR HEADER */}
-      <div className="bg-white rounded-[2rem] shadow-xl border-2 border-red-100 overflow-hidden mb-12">
+      {/* ── Premium Header Banner ── */}
+      <div className="bg-white rounded-3xl shadow-lg border border-red-100 overflow-hidden mb-8">
         <div className="md:flex">
-          <div className="md:w-5/12 h-64 md:h-auto bg-gray-200 relative overflow-hidden">
+          <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden">
              <img 
-               src="/icons/hire_machinery.png" 
+               src="/images/modules/rentals.png" 
                alt="Machinery Bazaar" 
-               className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" 
+               className="w-full h-full object-cover"
              />
-             <div className="absolute inset-0 bg-gradient-to-t from-red-900/60 to-transparent flex items-end p-6">
-                <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-black uppercase tracking-tighter shadow-lg flex items-center gap-1">
-                   <ShieldCheck size={14} /> Swadeshi Bazaar
-                </span>
-             </div>
+             <div className="absolute inset-0 bg-red-900/10"></div>
           </div>
-          <div className="p-10 md:w-7/12 flex flex-col justify-center">
-            <h1 className="text-4xl font-black text-gray-800 mb-3 tracking-tighter">
-              Machinery <span className="text-red-600">Bazaar</span>
-            </h1>
-            <p className="text-gray-600 text-lg leading-relaxed mb-8 max-w-lg">
-              The direct Mandi for your farm equipment. Rent tractors, harvesters, JCBs, and drones from your fellow farmers at the best local rates.
-            </p>
-            <div className="flex flex-wrap gap-4">
-               <button 
-                  onClick={() => setShowForm(true)} 
-                  className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black text-lg shadow-xl shadow-red-200 hover:bg-red-700 transition transform hover:-translate-y-1 flex items-center gap-2"
-                >
-                  <Plus size={24} /> List My Machine
-                </button>
-                <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-100 font-black text-sm">
-                   <TrendingUp size={18} /> Direct Farmer Deal
+          <div className="p-8 md:w-2/3 flex flex-col justify-center relative">
+             <div className="flex justify-between items-start mb-4">
+                <div>
+                   <h1 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                     Machinery Bazaar
+                   </h1>
+                   <p className="text-gray-500 font-bold mt-1 uppercase tracking-widest text-xs">Direct Farmer-to-Farmer Rentals</p>
                 </div>
-            </div>
+                <button 
+                  onClick={() => setShowForm(true)} 
+                  className="bg-red-600 text-white px-6 py-3 rounded-2xl font-black shadow-xl hover:scale-105 transition transform flex items-center gap-2"
+                >
+                  <span>➕</span> List Machine
+                </button>
+             </div>
+             <p className="text-sm text-gray-600 max-w-xl font-medium leading-relaxed mb-4">
+               The direct Mandi for your farm equipment. Rent tractors, harvesters, and drones from your fellow farmers at the best local rates.
+             </p>
+             <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-100 font-black text-xs w-fit">
+                <TrendingUp size={16} /> Direct Farmer Deal
+             </div>
           </div>
         </div>
       </div>
@@ -166,12 +178,14 @@ const Rentals = () => {
       {/* 🏗️ BAZAAR LISTINGS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {vehicles.length === 0 ? (
-          <div className="col-span-full py-24 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100">
-             <Tractor size={80} className="mx-auto text-gray-100 mb-6" />
-             <p className="text-gray-400 font-black text-2xl uppercase tracking-tighter">Bazaar is Empty today</p>
-             <button onClick={() => setShowForm(true)} className="mt-4 text-red-600 font-black flex items-center gap-2 mx-auto hover:underline">
-                <Plus size={20} /> Be the first to list machinery
-             </button>
+          <div className="col-span-full">
+            <EmptyState 
+              title="Bazaar is Empty" 
+              description="No machinery is currently listed in your area. Be the first one to list your equipment!"
+              actionLabel="List Machine"
+              actionLink="#" // This can be handled by clicking the header button
+              icon={<Tractor size={64} />}
+            />
           </div>
         ) : (
           vehicles

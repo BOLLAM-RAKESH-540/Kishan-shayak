@@ -5,37 +5,15 @@ import {
     deleteHusbandryListing,
     toggleListingStatus
 } from '../controllers/husbandry.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-/**
- * @route   POST /api/husbandry/create
- * @desc    Create a new animal or milk listing
- */
-router.post('/create', createHusbandryListing);
-
-/**
- * @route   GET /api/husbandry/my-listings/:userId
- * @desc    Get all listings entered by a specific user (phone number)
- */
-router.get('/my-listings/:userId', getMyHusbandryListings);
-
-/**
- * @route   GET /api/husbandry/my-listings
- * @desc    Alternative: Get listings via query params
- */
-router.get('/my-listings', getMyHusbandryListings);
-
-/**
- * @route   PATCH /api/husbandry/toggle-status/:id
- * @desc    Mark an item as SOLD or ACTIVE (Toggle)
- */
-router.patch('/toggle-status/:id', toggleListingStatus);
-
-/**
- * @route   DELETE /api/husbandry/delete/:id
- * @desc    Permanently remove a listing
- */
-router.delete('/delete/:id', deleteHusbandryListing);
+// All husbandry routes require authentication
+router.post('/create', authMiddleware, createHusbandryListing);
+router.get('/my-listings/:userId', authMiddleware, getMyHusbandryListings);
+router.get('/my-listings', authMiddleware, getMyHusbandryListings);
+router.patch('/toggle-status/:id', authMiddleware, toggleListingStatus);
+router.delete('/delete/:id', authMiddleware, deleteHusbandryListing);
 
 export default router;
