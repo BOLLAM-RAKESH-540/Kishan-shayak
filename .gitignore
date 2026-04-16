@@ -32,6 +32,13 @@ out/
 logs/
 *.log
 
+# User Uploads (DO NOT PUSH)
+server/uploads/
+
+# Lint & Artifacts
+client/lint.txt
+client/lint-results.json
+
 # Docker
 .docker/
 docker-compose.override.yml
